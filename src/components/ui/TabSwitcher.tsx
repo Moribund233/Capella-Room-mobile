@@ -3,6 +3,7 @@
  */
 
 import { View, Pressable, Text } from "react-native";
+import { useTranslation } from "react-i18next";
 
 type AuthTab = "login" | "register";
 
@@ -13,11 +14,6 @@ interface TabSwitcherProps {
   onSwitch: (tab: AuthTab) => void;
 }
 
-const tabs: { key: AuthTab; label: string }[] = [
-  { key: "login", label: "Sign In" },
-  { key: "register", label: "Create Account" },
-];
-
 /**
  * Render login / register tabs.
  *
@@ -25,6 +21,12 @@ const tabs: { key: AuthTab; label: string }[] = [
  * @returns A React element.
  */
 export function TabSwitcher({ active, onSwitch }: TabSwitcherProps) {
+  const { t } = useTranslation();
+  const tabs: { key: AuthTab; label: string }[] = [
+    { key: "login", label: t("auth.signIn") },
+    { key: "register", label: t("auth.createAccount") },
+  ];
+
   return (
     <View className="mb-6 flex-row rounded-[14px] bg-surface-alt p-1">
       {tabs.map((tab) => {

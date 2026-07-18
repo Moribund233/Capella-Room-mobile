@@ -1,11 +1,24 @@
 import { create } from "zustand";
 
-/* ─── UI-only state (friends data → React Query) ──────── */
+/* ─── UI-only state for the friends feature ───────────────── */
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface FriendState {
-  // Currently empty — all friend data is fetched via React Query hooks.
-  // Add UI-only state here in the future (e.g. selected friend filter).
+  selectedUserId: string | null;
+  activeRequestTab: "received" | "sent";
+
+  setSelectedUserId: (id: string | null) => void;
+  setActiveRequestTab: (tab: "received" | "sent") => void;
 }
 
-export const useFriendStore = create<FriendState>(() => ({}));
+export const useFriendStore = create<FriendState>((set) => ({
+  selectedUserId: null,
+  activeRequestTab: "received",
+
+  setSelectedUserId: (id) => {
+    set({ selectedUserId: id });
+  },
+
+  setActiveRequestTab: (tab) => {
+    set({ activeRequestTab: tab });
+  },
+}));

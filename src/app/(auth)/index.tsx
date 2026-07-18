@@ -6,8 +6,10 @@
  * `components/auth`.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { View, Text } from "react-native";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/lib/store/auth";
 import { Screen } from "@/components/ui/Screen";
 import { Logo } from "@/components/ui/Logo";
@@ -25,10 +27,19 @@ type AuthTab = "login" | "register";
  * @returns A React element.
  */
 export default function AuthScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<AuthTab>("login");
+  const user = useAuthStore((s) => s.user);
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/(tabs)");
+    }
+  }, [user, router]);
 
   const onLogin = useCallback(
     async (data: { email: string; password: string }) => {
@@ -55,13 +66,12 @@ export default function AuthScreen() {
 
         <View className="mb-9">
           <Text className="font-display-bold text-[30px] leading-[34px] tracking-tight text-ink">
-            Where chats{"\n"}feel like <Text className="text-purple">home</Text>
+            {t("auth.tagline")}
           </Text>
           <Text className="mt-2.5 text-[14px] leading-[22px] text-ink-3">
-            Real-time messaging for communities, teams & friends. Fast, beautiful, and
-            private.
+            {t("auth.subtitle")}
           </Text>
-          <Handwriting>✦ built with care</Handwriting>
+          <Handwriting>{t("auth.handwriting")}</Handwriting>
         </View>
 
         <TabSwitcher active={activeTab} onSwitch={setActiveTab} />

@@ -98,6 +98,15 @@ export async function getRooms(
   return request<Room[]>(path, { method: "GET" });
 }
 
+export async function getRecentRooms(limit?: number, offset?: number): Promise<Room[]> {
+  const params = new URLSearchParams();
+  if (limit !== undefined) params.set("limit", String(limit));
+  if (offset !== undefined) params.set("offset", String(offset));
+  const qs = params.toString();
+  const path = `/api/v1/rooms/recent${qs ? `?${qs}` : ""}`;
+  return request<Room[]>(path, { method: "GET" });
+}
+
 export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
   return request<Room>("/api/v1/rooms", {
     method: "POST",

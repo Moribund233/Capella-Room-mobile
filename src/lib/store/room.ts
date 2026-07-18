@@ -11,6 +11,7 @@ interface RoomState {
 
   setCurrentRoom: (room: Room | null) => void;
   clearCurrentRoom: () => void;
+  setMembers: (members: RoomMember[]) => void;
   setOnlineUsers: (roomId: string, users: OnlineUser[]) => void;
   updateRoomSummary: (
     roomId: string,
@@ -37,6 +38,10 @@ export const useRoomStore = create<RoomState>((set) => ({
 
   clearCurrentRoom: () => {
     set({ currentRoom: null, members: [], onlineUsers: {} });
+  },
+
+  setMembers: (members) => {
+    set({ members });
   },
 
   setOnlineUsers: (roomId, users) => {

@@ -1,13 +1,24 @@
 import { request, ApiError, API_BASE_URL } from "./client";
 import { getAccessToken } from "@/lib/auth/token";
 
-interface FileInfo {
+export type FileCategory = "images" | "documents" | "videos" | "audio" | "others";
+export type FileUsageType = "message" | "avatar" | "room" | "general";
+
+export interface UploaderInfo {
   id: string;
-  filename: string;
+  username: string;
+  avatar_url: string | null;
+}
+
+export interface FileInfo {
+  id: string;
+  original_name: string;
   file_url: string;
-  file_type: string;
   file_size: number;
   mime_type: string;
+  category: FileCategory;
+  usage_type: FileUsageType;
+  uploader: UploaderInfo | null;
   created_at: string;
 }
 
@@ -150,4 +161,4 @@ export async function cancelChunkedUpload(sessionId: string): Promise<unknown> {
   return request(`/api/v1/upload/chunked/${sessionId}`, { method: "DELETE" });
 }
 
-export type { FileInfo, ChunkedSession, ChunkedStatus };
+export type { ChunkedSession, ChunkedStatus };

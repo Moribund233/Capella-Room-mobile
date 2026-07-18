@@ -5,6 +5,7 @@
 import { useCallback } from "react";
 import { View, Alert } from "react-native";
 import { useForm, Controller, useWatch } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { zodResolver } from "@/lib/utils/zodResolver";
 import { ApiError } from "@/lib/api/client";
@@ -46,6 +47,7 @@ interface RegisterFormProps {
  * @returns A React element.
  */
 export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
+  const { t } = useTranslation();
   const {
     control,
     handleSubmit,
@@ -61,15 +63,15 @@ export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
     async (data: RegisterFormData) => {
       try {
         await onSubmit(data);
-        Alert.alert("Account Created", "You can now sign in.");
+        Alert.alert(t("common.done"), t("auth.signIn"));
       } catch (e) {
         Alert.alert(
-          "Registration Failed",
-          e instanceof ApiError ? e.message : "Network error. Please try again.",
+          t("auth.createAccount"),
+          e instanceof ApiError ? e.message : t("errors.network"),
         );
       }
     },
-    [onSubmit],
+    [onSubmit, t],
   );
 
   return (
@@ -79,8 +81,8 @@ export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
         name="email"
         render={({ field: { value, onChange } }) => (
           <Input
-            label="Email"
-            placeholder="you@example.com"
+            label={t("auth.email")}
+            placeholder={t("auth.emailPlaceholder")}
             value={value}
             onChangeText={onChange}
             keyboardType="email-address"
@@ -94,8 +96,8 @@ export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
         name="username"
         render={({ field: { value, onChange } }) => (
           <Input
-            label="Username"
-            placeholder="cool_user"
+            label={t("auth.username")}
+            placeholder={t("auth.usernamePlaceholder")}
             value={value}
             onChangeText={onChange}
             autoCapitalize="none"
@@ -108,8 +110,8 @@ export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
         name="password"
         render={({ field: { value, onChange } }) => (
           <Input
-            label="Password"
-            placeholder="Min 8 characters"
+            label={t("auth.password")}
+            placeholder={t("auth.passwordHint")}
             value={value}
             onChangeText={onChange}
             secureTextEntry
@@ -120,7 +122,7 @@ export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
       <PasswordStrength password={password ?? ""} />
 
       <Button
-        title="Create Account ✦"
+        title={t("auth.createAccount")}
         onPress={handleSubmit(submit)}
         loading={isLoading}
       />

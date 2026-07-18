@@ -29,13 +29,6 @@ export function useMessages(roomId: string, limit = 50) {
       return messages[messages.length - 1].id;
     },
     enabled: !!roomId && !!useAuthStore.getState().accessToken,
-    select: (data) => ({
-      ...data,
-      pages: data.pages.map((page) => ({
-        ...page,
-        messages: [...page.messages].reverse(),
-      })),
-    }),
   });
 }
 
@@ -44,6 +37,14 @@ export function usePinnedMessages(roomId: string) {
     queryKey: messageKeys.pinned(roomId),
     queryFn: () => messagesApi.getPinnedMessages(roomId),
     enabled: !!roomId && !!useAuthStore.getState().accessToken,
+  });
+}
+
+export function useMessageReactions(messageId: string) {
+  return useQuery({
+    queryKey: ["messages", messageId, "reactions"],
+    queryFn: () => messagesApi.getReactions(messageId),
+    enabled: !!messageId && !!useAuthStore.getState().accessToken,
   });
 }
 

@@ -7,6 +7,8 @@ import { useAuthStore } from "../store/auth";
 import { queryClient } from "../hooks/queryClient";
 import { messageKeys } from "../hooks/useMessagesQuery";
 import { roomKeys } from "../hooks/useRoomsQuery";
+import { userKeys } from "../hooks/useUsersQuery";
+import { notifKeys } from "../hooks/useNotificationsQuery";
 import type { MessagesResponse, Message } from "../api/messages";
 
 /* ─── Helpers: update message in infinite query cache ─── */
@@ -156,10 +158,11 @@ export function useWsEventHandlers() {
       }),
     );
 
-    /* ── Room summary → invalidate rooms list ── */
+    /* ── Room summary → invalidate rooms list (all + recent) ── */
     unsubscribers.push(
       ws.on("RoomMessageSummary", (_payload: any) => {
         queryClient.invalidateQueries({ queryKey: roomKeys.all });
+        queryClient.invalidateQueries({ queryKey: roomKeys.recent });
       }),
     );
 
@@ -176,6 +179,75 @@ export function useWsEventHandlers() {
         queryClient.invalidateQueries({
           queryKey: messageKeys.pinned(payload.room_id),
         });
+      }),
+    );
+
+    /* ── Read receipt → refresh message list ── */
+    unsubscribers.push(
+      ws.on("MessageReadReceipt", (payload: any) => {
+        if (payload.room_id) {
+          queryClient.invalidateQueries({
+            queryKey: messageKeys.list(payload.room_id),
+          });
+        }
+      }),
+    );
+
+    /* ── User status changed → invalidate user/user list caches ── */
+    unsubscribers.push(
+      ws.on("UserStatusChanged", (payload: any) => {
+        queryClient.invalidateQueries({ queryKey: userKeys.me });
+        queryClient.invalidateQueries({ queryKey: userKeys.user(payload.user_id) });
+        queryClient.invalidateQueries({ queryKey: userKeys.all });
+      }),
+    );
+
+    /* ── Notification events → invalidate notifications ── */
+    unsubscribers.push(
+      ws.on("Mentioned", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+        queryClient.invalidateQueries({ queryKey: notifKeys.unread });
+      }),
+    );
+    unsubscribers.push(
+      ws.on("PrivateMessage", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+        queryClient.invalidateQueries({ queryKey: notifKeys.unread });
+      }),
+    );
+    unsubscribers.push(
+      ws.on("RoomInvitation", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+        queryClient.invalidateQueries({ queryKey: notifKeys.unread });
+      }),
+    );
+    unsubscribers.push(
+      ws.on("SystemNotification", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+        queryClient.invalidateQueries({ queryKey: notifKeys.unread });
+      }),
+    );
+    unsubscribers.push(
+      ws.on("FileUploadComplete", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+        queryClient.invalidateQueries({ queryKey: notifKeys.unread });
+      }),
+    );
+
+    /* ── Missed messages → invalidate room messages ── */
+    unsubscribers.push(
+      ws.on("MissedMessages", (payload: any) => {
+        queryClient.invalidateQueries({
+          queryKey: messageKeys.list(payload.room_id),
+        });
+      }),
+    );
+
+    /* ── Offline notifications → invalidate notifications ── */
+    unsubscribers.push(
+      ws.on("OfflineNotifications", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+        queryClient.invalidateQueries({ queryKey: notifKeys.unread });
       }),
     );
 

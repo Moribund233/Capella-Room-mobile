@@ -5,6 +5,7 @@
 import { useCallback } from "react";
 import { View, Alert } from "react-native";
 import { useForm, Controller } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { zodResolver } from "@/lib/utils/zodResolver";
 import { ApiError } from "@/lib/api/client";
@@ -34,6 +35,7 @@ interface LoginFormProps {
  * @returns A React element.
  */
 export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
+  const { t } = useTranslation();
   const {
     control,
     handleSubmit,
@@ -49,12 +51,12 @@ export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
         await onSubmit(data);
       } catch (e) {
         Alert.alert(
-          "Login Failed",
-          e instanceof ApiError ? e.message : "Network error. Please try again.",
+          t("auth.signIn"),
+          e instanceof ApiError ? e.message : t("errors.network"),
         );
       }
     },
-    [onSubmit],
+    [onSubmit, t],
   );
 
   return (
@@ -64,8 +66,8 @@ export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
         name="email"
         render={({ field: { value, onChange } }) => (
           <Input
-            label="Email"
-            placeholder="you@example.com"
+            label={t("auth.email")}
+            placeholder={t("auth.emailPlaceholder")}
             value={value}
             onChangeText={onChange}
             keyboardType="email-address"
@@ -79,8 +81,8 @@ export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
         name="password"
         render={({ field: { value, onChange } }) => (
           <Input
-            label="Password"
-            placeholder="••••••••"
+            label={t("auth.password")}
+            placeholder={t("auth.passwordPlaceholder")}
             value={value}
             onChangeText={onChange}
             secureTextEntry
@@ -89,9 +91,9 @@ export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
         )}
       />
 
-      <Button title="Sign In →" onPress={handleSubmit(submit)} loading={isLoading} />
+      <Button title={t("auth.signIn")} onPress={handleSubmit(submit)} loading={isLoading} />
 
-      <Divider label="or continue with" />
+      <Divider label={t("auth.orContinueWith")} />
 
       <View className="flex-row gap-2.5">
         <SocialButton provider="google" />

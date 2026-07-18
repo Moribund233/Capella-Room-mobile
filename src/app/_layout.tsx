@@ -20,10 +20,14 @@ import { Caveat_400Regular } from "@expo-google-fonts/caveat";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "@/lib/store/auth";
+import { useThemeStore } from "@/lib/store/theme";
+import { useLanguageStore } from "@/lib/store/language";
 import { useWsConnection, useWsEventHandlers } from "@/lib/ws/hooks";
 import { queryClient } from "@/lib/hooks/queryClient";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "@/global.css";
+import "@/lib/i18n";
 
 /**
  * Render the root app layout.
@@ -33,6 +37,8 @@ import "@/global.css";
 export default function RootLayout() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const isHydrating = useAuthStore((s) => s.isHydrating);
+  const resolvedTheme = useThemeStore((s) => s.resolvedTheme);
+  useLanguageStore((s) => s.locale); // keep store alive for hydration side effects
 
   const [fontsLoaded] = useFonts({
     Inter: Inter_400Regular,
@@ -61,11 +67,13 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
+        <ThemeProvider>
+          <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+        </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

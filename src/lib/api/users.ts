@@ -35,18 +35,64 @@ export interface UserSettings {
   notification: {
     private_message: boolean;
     mentioned: boolean;
+    room_invitation: boolean;
+    system_notification: boolean;
+    file_upload_complete: boolean;
     sound_enabled: boolean;
+    desktop_notification: boolean;
     do_not_disturb: boolean;
   };
   privacy: {
-    online_status_visibility: string;
+    online_status_visibility: "everyone" | "friends" | "nobody";
+    profile_visibility: "everyone" | "friends" | "nobody";
+    allow_stranger_message: boolean;
+    allow_room_invitation: boolean;
     single_device_login: boolean;
   };
   message: {
     message_preview: boolean;
     read_receipt: boolean;
     typing_indicator: boolean;
+    do_not_disturb: boolean;
   };
+  language: {
+    language: string;
+    timezone: string;
+    time_format: "12h" | "24h";
+    date_format: "YYYY-MM-DD" | "DD/MM/YYYY" | "MM/DD/YYYY";
+    week_start: "monday" | "sunday";
+  };
+  accessibility: {
+    font_size: "small" | "medium" | "large";
+    high_contrast: boolean;
+    reduce_animations: boolean;
+    screen_reader_optimized: boolean;
+  };
+  media: {
+    auto_download_images: boolean;
+    auto_download_videos: boolean;
+    auto_download_files: boolean;
+    image_quality: "low" | "medium" | "high";
+    auto_play_videos: boolean;
+  };
+}
+
+export interface UserRoomSettings {
+  room_id: string;
+  muted: boolean;
+  pinned: boolean;
+  custom_name: string | null;
+  custom_color: string | null;
+  notification_preference: "all" | "mentions" | "none";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SecurityOverview {
+  active_devices: number;
+  current_device: Device;
+  suspicious_activities: number;
+  single_device_login: boolean;
 }
 
 export interface Device {
@@ -267,4 +313,53 @@ export async function getLoginHistory(
   const qs = params.toString();
   const path = `/api/v1/users/me/login-history${qs ? `?${qs}` : ""}`;
   return request(path, { method: "GET" });
+}
+
+export async function getRecommendedUsers(): Promise<User[]> {
+  return request<User[]>("/api/v1/users/recommended", { method: "GET" });
+}
+
+export async function getSecurityOverview(): Promise<SecurityOverview> {
+  return request<SecurityOverview>("/api/v1/users/me/security/overview", {
+    method: "GET",
+  });
+}
+
+export async function terminateAllOtherDevices(): Promise<string> {
+  return request<string>("/api/v1/users/me/devices/terminate-others", {
+    method: "POST",
+  });
+}
+
+export async function getAllRoomSettings(): Promise<UserRoomSettings[]> {
+  return request<UserRoomSettings[]>("/api/v1/users/me/rooms/settings", {
+    method: "GET",
+  });
+}
+
+export async function getRoomSettings(roomId: string): Promise<UserRoomSettings> {
+  return request<UserRoomSettings>(
+    `/api/v1/users/me/rooms/${encodeURIComponent(roomId)}/settings`,
+    { method: "GET" },
+  );
+}
+
+export async function updateRoomSettings(
+  roomId: string,
+  settings: Partial<Omit<UserRoomSettings, "room_id" | "created_at" | "updated_at">>,
+): Promise<UserRoomSettings> {
+  return request<UserRoomSettings>(
+    `/api/v1/users/me/rooms/${encodeURIComponent(roomId)}/settings`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(settings),
+    },
+  );
+}
+
+export async function resetRoomSettings(roomId: string): Promise<string> {
+  return request<string>(
+    `/api/v1/users/me/rooms/${encodeURIComponent(roomId)}/settings`,
+    { method: "DELETE" },
+  );
 }

@@ -1,3 +1,159 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* === Brand Colors (Light) === */
+    --cream: #f7f9fc;
+    --surface: #ffffff;
+    --surface-alt: #f1f5f9;
+    --surface-warm: #f8fafc;
+    --purple: #2563eb;
+    --purple-soft: #1d4ed8;
+    --purple-light: #dbeafe;
+    --purple-pale: #93c5fd;
+    --peach: #f4a261;
+    --peach-light: #fff0e0;
+    --peach-pale: #fcd5a8;
+    --mint: #5ec4a0;
+    --mint-light: #e0f7ee;
+    --mint-pale: #a7e8c9;
+    --rose: #e8788a;
+    --rose-light: #ffe8ec;
+    --rose-pale: #f5b5c0;
+    --rose-soft: #f09baa;
+    --amber: #e8b44a;
+    --amber-light: #fff5dc;
+
+    /* === Neutral / Ink (Light) === */
+    --ink: #1e293b;
+    --ink-2: #334155;
+    --ink-3: #94a3b8;
+    --ink-4: #cbd5e1;
+    --ink-alt: #0f172a;
+    --ink-surface: #334155;
+
+    /* === Borders (Light) === */
+    --border: #e8edf3;
+    --border-soft: #e8edf3;
+
+    /* === Feedback Text === */
+    --mint-text: #3a9b74;
+    --peach-text: #c47a30;
+    --rose-text: #a8445a;
+    --amber-text: #7a6318;
+    --amber-dark: #9b7a1c;
+
+    /* === Frame / Auth === */
+    --frame-bg: #e2e8f0;
+    --frame-mid: #475569;
+    --auth-purple: #eff6ff;
+    --auth-peach: #fff7ed;
+    --auth-mint: #ecfdf5;
+
+    /* === Glass === */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-heavy: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.8);
+    --cream-alpha: rgba(247, 249, 252, 0.85);
+    --cream-alpha-95: rgba(247, 249, 252, 0.95);
+
+    /* === Purple Alpha Glows === */
+    --purple-alpha-2: rgba(37, 99, 235, 0.04);
+    --purple-alpha-8: rgba(37, 99, 235, 0.08);
+    --purple-glow: rgba(37, 99, 235, 0.1);
+    --purple-glow-md: rgba(37, 99, 235, 0.12);
+    --purple-glow-strong: rgba(37, 99, 235, 0.15);
+    --purple-glow-intense: rgba(37, 99, 235, 0.25);
+    --purple-glow-border: rgba(37, 99, 235, 0.2);
+
+    /* === Accent Borders === */
+    --purple-border: rgba(37, 99, 235, 0.15);
+    --peach-border: rgba(244, 162, 97, 0.2);
+    --peach-border-soft: rgba(244, 162, 97, 0.15);
+    --rose-border: rgba(232, 120, 138, 0.2);
+    --amber-border: rgba(232, 180, 74, 0.2);
+
+    /* === Dark Ink Surface === */
+    --ink-border-light: rgba(255, 255, 255, 0.05);
+    --ink-divider: rgba(255, 255, 255, 0.1);
+  }
+
+  .dark {
+    /* === Brand Colors (Dark) === */
+    --cream: #0b1120;
+    --surface: #151c2c;
+    --surface-alt: #1e293b;
+    --surface-warm: #1a2332;
+    --purple: #3b82f6;
+    --purple-soft: #60a5fa;
+    --purple-light: rgba(59, 130, 246, 0.2);
+    --purple-pale: rgba(96, 165, 250, 0.35);
+
+    --peach: #f4a261;
+    --peach-light: rgba(244, 162, 97, 0.18);
+    --peach-pale: rgba(244, 162, 97, 0.35);
+
+    --mint: #5ec4a0;
+    --mint-light: rgba(94, 196, 160, 0.18);
+    --mint-pale: rgba(94, 196, 160, 0.35);
+
+    --rose: #e8788a;
+    --rose-light: rgba(232, 120, 138, 0.18);
+    --rose-pale: rgba(232, 120, 138, 0.35);
+    --rose-soft: #f09baa;
+
+    --amber: #e8b44a;
+    --amber-light: rgba(232, 180, 74, 0.18);
+
+    /* === Neutral / Ink (Dark) === */
+    --ink: #f8fafc;
+    --ink-2: #e2e8f0;
+    --ink-3: #94a3b8;
+    --ink-4: #64748b;
+    --ink-alt: #f1f5f9;
+    --ink-surface: #334155;
+
+    /* === Borders (Dark) === */
+    --border: rgba(255, 255, 255, 0.08);
+    --border-soft: rgba(255, 255, 255, 0.06);
+
+    /* === Feedback Text === */
+    --mint-text: #6ee7b7;
+    --peach-text: #fdba74;
+    --rose-text: #fda4af;
+    --amber-text: #fde68a;
+    --amber-dark: #fde68a;
+
+    /* === Frame / Auth === */
+    --frame-bg: #020617;
+    --frame-mid: #1e293b;
+    --auth-purple: rgba(59, 130, 246, 0.12);
+    --auth-peach: rgba(244, 162, 97, 0.08);
+    --auth-mint: rgba(94, 196, 160, 0.08);
+
+    /* === Glass === */
+    --glass-bg: rgba(21, 28, 44, 0.75);
+    --glass-heavy: rgba(15, 23, 42, 0.92);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --cream-alpha: rgba(11, 17, 32, 0.9);
+    --cream-alpha-95: rgba(11, 17, 32, 0.95);
+
+    /* === Purple Alpha Glows === */
+    --purple-alpha-2: rgba(59, 130, 246, 0.06);
+    --purple-alpha-8: rgba(59, 130, 246, 0.12);
+    --purple-glow: rgba(59, 130, 246, 0.15);
+    --purple-glow-md: rgba(59, 130, 246, 0.2);
+    --purple-glow-strong: rgba(59, 130, 246, 0.25);
+    --purple-glow-intense: rgba(59, 130, 246, 0.4);
+    --purple-glow-border: rgba(59, 130, 246, 0.3);
+
+    /* === Accent Borders === */
+    --purple-border: rgba(59, 130, 246, 0.25);
+    --peach-border: rgba(244, 162, 97, 0.25);
+    --peach-border-soft: rgba(244, 162, 97, 0.2);
+    --rose-border: rgba(232, 120, 138, 0.25);
+    --amber-border: rgba(232, 180, 74, 0.25);
+  }
+}
