@@ -107,7 +107,9 @@ export interface RoomMessageSummaryPayload {
 export interface ChatMessagePayload {
   room_id: string;
   content: string;
+  message_type?: "text" | "image" | "file" | "audio" | "video" | "system" | string;
   reply_to?: string | null;
+  file_url?: string | null;
 }
 
 export interface ReplyToInfo {
@@ -127,6 +129,7 @@ export interface NewMessagePayload {
   message_type?: string;
   reply_to: string | null;
   reply_to_message: ReplyToInfo | null;
+  file_url?: string | null;
   created_at: string;
 }
 

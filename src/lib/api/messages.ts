@@ -24,9 +24,10 @@ interface Message {
   room_id: string;
   sender: MessageSender;
   content: string;
-  message_type: "text" | "image" | "file" | "system";
+  message_type: "text" | "image" | "file" | "audio" | "system";
   reply_to: string | null;
   reply_to_message: ReplyToMessage | null;
+  file_url: string | null;
   is_deleted: boolean;
   is_edited?: boolean;
   created_at: string;

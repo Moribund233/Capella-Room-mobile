@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { Modal, View, Text, Pressable, ScrollView, Switch, Animated, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,7 +25,7 @@ interface SettingsDrawerProps {
 export function SettingsDrawer({ visible, title, options, onClose }: SettingsDrawerProps) {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useMemo(() => new Animated.Value(0), []);
 
   useEffect(() => {
     Animated.spring(slideAnim, {

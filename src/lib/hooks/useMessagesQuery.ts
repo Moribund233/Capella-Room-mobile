@@ -13,6 +13,7 @@ export const messageKeys = {
   list: (roomId: string) => ["rooms", roomId, "messages"] as const,
   search: (query: string) => ["messages", "search", query] as const,
   pinned: (roomId: string) => ["rooms", roomId, "pinned"] as const,
+  history: (messageId: string) => ["messages", messageId, "history"] as const,
 };
 
 // ── Queries ──
@@ -59,6 +60,14 @@ export function useSearchMessages() {
       roomId?: string;
       limit?: number;
     }) => messagesApi.searchMessages(query, roomId, limit),
+  });
+}
+
+export function useMessageEditHistory(messageId: string) {
+  return useQuery({
+    queryKey: messageKeys.history(messageId),
+    queryFn: () => messagesApi.getEditHistory(messageId),
+    enabled: !!messageId && !!useAuthStore.getState().accessToken,
   });
 }
 

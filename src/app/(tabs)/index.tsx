@@ -19,7 +19,7 @@ import { useUnreadCount } from "@/lib/hooks/useNotificationsQuery";
 import { useAuthStore } from "@/lib/store/auth";
 import { formatMessageTime } from "@/lib/utils/date";
 import { useThemeColors } from "@/lib/hooks/useThemeColors";
-import type { Room, LastMessage } from "@/lib/api/rooms";
+import { getDirectRoom, type Room, type LastMessage } from "@/lib/api/rooms";
 import type { User } from "@/lib/api/users";
 
 const AVATAR_COLORS = [
@@ -156,12 +156,27 @@ function SearchBar({
 
 function OnlineFriendsStrip({ friends }: { friends?: User[] }) {
   const router = useRouter();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const onlineFriends = useMemo(
     () => (friends ?? []).filter((f) => f.status === "online").slice(0, 10),
     [friends],
   );
 
   if (!onlineFriends.length) return null;
+
+  const handlePress = async (friend: User) => {
+    if (loadingId) return;
+    setLoadingId(friend.id);
+    try {
+      const directRoom = await getDirectRoom(friend.id);
+      router.push(`/room/${directRoom.id}` as Href);
+    } catch {
+      // Fallback: navigate by user id if server does not return a room.
+      router.push(`/room/${friend.id}` as Href);
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   return (
     <View className="mb-4 px-5">
@@ -173,7 +188,8 @@ function OnlineFriendsStrip({ friends }: { friends?: User[] }) {
         {onlineFriends.map((friend) => (
           <Pressable
             key={friend.id}
-            onPress={() => router.push(`/room/${friend.id}` as Href)}
+            onPress={() => handlePress(friend)}
+            disabled={loadingId === friend.id}
             className="items-center"
           >
             <Avatar
@@ -182,6 +198,11 @@ function OnlineFriendsStrip({ friends }: { friends?: User[] }) {
               size={44}
               online
             />
+            {loadingId === friend.id && (
+              <View className="absolute h-11 w-11 items-center justify-center rounded-full bg-black/20">
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              </View>
+            )}
             <Text
               className="mt-1.5 max-w-[48px] text-[10px] text-ink-3"
               numberOfLines={1}
@@ -292,8 +313,6 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
-  const currentUserId = useAuthStore((s) => s.user?.id);
-
   const [search, setSearch] = useState("");
 
   const {

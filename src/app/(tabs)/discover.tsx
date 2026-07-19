@@ -6,7 +6,8 @@ import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { useThemeColors } from "@/lib/hooks/useThemeColors";
 import { useRecommendedUsers, useSearchUsers } from "@/lib/hooks/useUsersQuery";
-import { useRooms, useJoinRoom } from "@/lib/hooks/useRoomsQuery";
+import { useRooms, useJoinRoom, useJoinByInvite, useGetOrCreateDirectRoom } from "@/lib/hooks/useRoomsQuery";
+import { validateInvite } from "@/lib/api/rooms";
 import {
   useFriends,
   useReceivedRequests,
@@ -97,6 +98,10 @@ export default function DiscoverScreen() {
   const { mutate: removeFriend, isPending: removingFriend } = useRemoveFriend();
   const { mutate: cancelSentReq, isPending: cancellingSent } = useCancelFriendRequest();
   const { mutate: joinRoom, isPending: joiningRoom } = useJoinRoom();
+  const { mutate: joinByInvite, isPending: joiningByInvite } = useJoinByInvite();
+  const { mutate: getDirectRoom, isPending: messaging } = useGetOrCreateDirectRoom();
+  const [messagingId, setMessagingId] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState("");
 
   const handleSearch = useCallback((text: string) => {
     setSearchQuery(text);
@@ -108,10 +113,10 @@ export default function DiscoverScreen() {
         { receiverId: userId },
         {
           onSuccess: () => {
-            Alert.alert(t("common.confirm"), "Friend request sent!");
+            Alert.alert(t("common.confirm"), t("discover.friendRequestSent"));
           },
           onError: (err: any) => {
-            Alert.alert("Error", err?.message ?? "Failed to send request");
+            Alert.alert(t("errors.generic"), err?.message ?? t("errors.generic"));
           },
         },
       );
@@ -126,11 +131,52 @@ export default function DiscoverScreen() {
           router.push(`/room/${roomId}` as any);
         },
         onError: (err: any) => {
-          Alert.alert("Error", err?.message ?? "Failed to join room");
+          Alert.alert(t("errors.generic"), err?.message ?? t("discover.joinRoomFailed"));
         },
       });
     },
-    [joinRoom, router],
+    [joinRoom, router, t],
+  );
+
+  const handleJoinByInvite = useCallback(() => {
+    const code = inviteCode.trim();
+    if (!code) return;
+    validateInvite(code)
+      .then((result) => {
+        if (!result.valid || !result.room_id) {
+          Alert.alert(t("errors.generic"), t("discover.invalidInvite"));
+          return;
+        }
+        joinByInvite(code, {
+          onSuccess: () => {
+            setInviteCode("");
+            router.push(`/room/${result.room_id}` as any);
+          },
+          onError: (err: any) => {
+            Alert.alert(t("errors.generic"), err?.message ?? t("discover.joinRoomFailed"));
+          },
+        });
+      })
+      .catch((err: any) => {
+        Alert.alert(t("errors.generic"), err?.message ?? t("discover.invalidInvite"));
+      });
+  }, [inviteCode, joinByInvite, router, t]);
+
+  const handleMessage = useCallback(
+    (userId: string) => {
+      if (messagingId) return;
+      setMessagingId(userId);
+      getDirectRoom(userId, {
+        onSuccess: (room) => {
+          setMessagingId(null);
+          router.push(`/room/${room.id}` as any);
+        },
+        onError: () => {
+          setMessagingId(null);
+        },
+      });
+    },
+    [getDirectRoom, messagingId, router],
   );
 
   const handleAcceptRequest = useCallback(
@@ -156,12 +202,12 @@ export default function DiscoverScreen() {
 
   const handleRemoveFriend = useCallback(
     (userId: string) => {
-      Alert.alert("Remove Friend", "Are you sure?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Remove", style: "destructive", onPress: () => removeFriend(userId) },
+      Alert.alert(t("discover.removeFriend"), t("discover.removeFriendConfirm"), [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("common.remove"), style: "destructive", onPress: () => removeFriend(userId) },
       ]);
     },
-    [removeFriend],
+    [removeFriend, t],
   );
 
   const requestedUserIds = new Set(
@@ -237,10 +283,39 @@ export default function DiscoverScreen() {
           />
         </ScrollView>
 
+        {/* Invite code */}
+        <View className="mx-5 mb-4 rounded-[18px] border border-border-soft bg-surface p-3.5">
+          <View className="mb-2 flex-row items-center gap-1.5">
+            <Ionicons name="mail-open-outline" size={16} color={colors.ink4} />
+            <Text className="text-[13px] font-sans-bold text-ink-2">{t("discover.joinByInvite")}</Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <TextInput
+              value={inviteCode}
+              onChangeText={setInviteCode}
+              placeholder={t("discover.inviteCodePlaceholder")}
+              placeholderTextColor={colors.ink4}
+              autoCapitalize="none"
+              className="flex-1 rounded-xl border border-border-soft bg-cream px-3 py-2 text-[13px] text-ink"
+            />
+            <Pressable
+              onPress={handleJoinByInvite}
+              disabled={joiningByInvite || !inviteCode.trim()}
+              className="rounded-xl bg-purple px-4 py-2.5 active:opacity-80 disabled:opacity-50"
+            >
+              {joiningByInvite ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text className="text-[13px] font-sans-semibold text-white">{t("discover.joinByInvite")}</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+
         {/* Search results */}
         {searchQuery.trim().length > 0 && searchUsersFiltered.length > 0 && (
           <View className="mb-4 px-5">
-            <SectionHeader icon="search-outline" label="Search results" />
+            <SectionHeader icon="search-outline" label={t("discover.searchResults")} />
             <View className="rounded-2xl border border-border-soft bg-surface overflow-hidden">
               {searchUsersFiltered.slice(0, 5).map((user: any) => (
                 <Pressable
@@ -264,7 +339,7 @@ export default function DiscoverScreen() {
                     className="rounded-xl bg-purple-light px-3 py-1.5"
                   >
                     <Text className="text-[11px] font-sans-semibold text-purple">
-                      {sendingReq ? "..." : "+ Add"}
+                      {sendingReq ? "..." : t("discover.addFriend")}
                     </Text>
                   </Pressable>
                 </Pressable>
@@ -308,7 +383,7 @@ export default function DiscoverScreen() {
                       </View>
                       <View className="flex-1">
                         <Text className="text-[13px] font-sans-semibold text-ink">
-                          {sender?.username ?? "Unknown"}
+                          {sender?.username ?? t("common.unknown")}
                         </Text>
                         {req.message && (
                           <Text className="text-[11px] text-ink-4" numberOfLines={1}>{req.message}</Text>
@@ -320,14 +395,14 @@ export default function DiscoverScreen() {
                           disabled={handlingReq}
                           className="rounded-xl border border-border-soft px-3 py-1.5"
                         >
-                          <Text className="text-[11px] font-sans-semibold text-ink-3">Decline</Text>
+                          <Text className="text-[11px] font-sans-semibold text-ink-3">{t("discover.decline")}</Text>
                         </Pressable>
                         <Pressable
                           onPress={() => handleAcceptRequest(req.id)}
                           disabled={handlingReq}
                           className="rounded-xl bg-purple px-3 py-1.5"
                         >
-                          <Text className="text-[11px] font-sans-semibold text-white">Accept</Text>
+                          <Text className="text-[11px] font-sans-semibold text-white">{t("discover.accept")}</Text>
                         </Pressable>
                       </View>
                     </View>
@@ -339,7 +414,7 @@ export default function DiscoverScreen() {
             {/* Sent requests */}
             {(sentRequests ?? []).length > 0 && (
               <>
-                <SectionHeader icon="paper-plane-outline" label="Sent Requests" />
+                <SectionHeader icon="paper-plane-outline" label={t("discover.sentRequests")} />
                 <View className="rounded-2xl border border-border-soft bg-surface overflow-hidden">
                   {(sentRequests ?? []).map((req: any) => {
                     const receiverId = req.receiver_id;
@@ -358,7 +433,7 @@ export default function DiscoverScreen() {
                         </View>
                         <View className="flex-1">
                           <Text className="text-[13px] font-sans-semibold text-ink">
-                            {t("common.pending") ?? "Pending"}
+                            {t("common.pending")}
                           </Text>
                           {req.message && (
                             <Text className="text-[11px] text-ink-4" numberOfLines={1}>{req.message}</Text>
@@ -369,7 +444,7 @@ export default function DiscoverScreen() {
                           disabled={cancellingSent}
                           className="rounded-xl border border-rose/30 px-3 py-1.5"
                         >
-                          <Text className="text-[11px] font-sans-semibold text-rose">Cancel</Text>
+                          <Text className="text-[11px] font-sans-semibold text-rose">{t("common.cancel")}</Text>
                         </Pressable>
                       </View>
                     );
@@ -404,7 +479,7 @@ export default function DiscoverScreen() {
                       </View>
                       {user.status === "online" && (
                         <View className="rounded-md bg-mint-light px-1.5 py-0.5">
-                          <Text className="text-[9px] font-sans-semibold text-mint-text">Online</Text>
+                          <Text className="text-[9px] font-sans-semibold text-mint-text">{t("common.online")}</Text>
                         </View>
                       )}
                     </View>
@@ -416,11 +491,17 @@ export default function DiscoverScreen() {
                       {user.bio ?? ""}
                     </Text>
                     <Pressable
-                      onPress={() => !alreadyRequested && !isFriend && handleAddFriend(user.id)}
-                      disabled={sendingReq || alreadyRequested || isFriend}
+                      onPress={() => {
+                        if (isFriend) {
+                          handleMessage(user.id);
+                        } else if (!alreadyRequested) {
+                          handleAddFriend(user.id);
+                        }
+                      }}
+                      disabled={sendingReq || alreadyRequested || messagingId === user.id}
                       className={`w-full rounded-xl py-1.5 ${
                         isFriend
-                          ? "bg-surface-alt"
+                          ? "bg-purple-light"
                           : alreadyRequested
                             ? "bg-amber-light"
                             : "bg-purple-light"
@@ -428,10 +509,16 @@ export default function DiscoverScreen() {
                     >
                       <Text className="text-center text-[11px] font-sans-semibold"
                         style={{
-                          color: isFriend ? colors.ink3 : alreadyRequested ? colors.amberText : colors.purple,
+                          color: isFriend ? colors.purple : alreadyRequested ? colors.amberText : colors.purple,
                         }}
                       >
-                        {isFriend ? "Friends" : alreadyRequested ? "Sent" : "+ Add Friend"}
+                        {isFriend
+                          ? messagingId === user.id
+                            ? "..."
+                            : t("discover.message")
+                          : alreadyRequested
+                            ? t("discover.sent")
+                            : t("discover.addFriend")}
                       </Text>
                     </Pressable>
                   </Pressable>
@@ -508,7 +595,7 @@ export default function DiscoverScreen() {
 
         {activeTab === "friends" && (
           <View className="px-5">
-            <SectionHeader icon="people-outline" label="Friends" />
+            <SectionHeader icon="people-outline" label={t("discover.tabs.friends")} />
             {friendsLoading ? (
               <View className="items-center py-8">
                 <ActivityIndicator size="small" color={colors.purple} />
@@ -518,7 +605,7 @@ export default function DiscoverScreen() {
                 <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-purple-light">
                   <Ionicons name="people-outline" size={28} color={colors.purple} />
                 </View>
-                <Text className="text-[13px] text-ink-3">No friends yet</Text>
+                <Text className="text-[13px] text-ink-3">{t("discover.noFriends")}</Text>
               </View>
             ) : (
               <View className="rounded-2xl border border-border-soft bg-surface overflow-hidden">
@@ -542,6 +629,17 @@ export default function DiscoverScreen() {
                     <View className="flex-1">
                       <Text className="text-[13px] font-sans-semibold text-ink">{friendInfo.username}</Text>
                     </View>
+                    <Pressable
+                      onPress={() => handleMessage(friendInfo.id)}
+                      disabled={messaging || messagingId === friendInfo.id}
+                      className="mr-1 rounded-xl bg-purple-light px-3 py-1.5"
+                    >
+                      {messagingId === friendInfo.id ? (
+                        <ActivityIndicator size="small" color={colors.purple} />
+                      ) : (
+                        <Text className="text-[11px] font-sans-semibold text-purple">{t("discover.message")}</Text>
+                      )}
+                    </Pressable>
                     <Pressable
                       onPress={() => handleRemoveFriend(friendInfo.id)}
                       disabled={removingFriend}

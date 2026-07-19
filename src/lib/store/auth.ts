@@ -62,10 +62,13 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  pushToken: string | null;
   isLoading: boolean;
   isHydrating: boolean;
 
   hydrate: () => Promise<void>;
+  setPushToken: (token: string | null) => void;
+  setUserStatus: (status: User["status"]) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   loginWithCode: (email: string, code: string) => Promise<void>;
@@ -81,8 +84,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: null,
   refreshToken: null,
+  pushToken: null,
   isLoading: false,
   isHydrating: true,
+
+  setPushToken: (token) => set({ pushToken: token }),
+
+  setUserStatus: (status) => {
+    const { user } = get();
+    if (user) set({ user: { ...user, status } });
+  },
 
   /* ── Hydrate from secure store on app start ── */
   hydrate: async () => {

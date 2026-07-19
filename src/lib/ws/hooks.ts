@@ -10,6 +10,7 @@ import { roomKeys } from "../hooks/useRoomsQuery";
 import { userKeys } from "../hooks/useUsersQuery";
 import { notifKeys } from "../hooks/useNotificationsQuery";
 import type { MessagesResponse, Message } from "../api/messages";
+import type { ReconnectResultPayload } from "./types";
 
 /* ─── Helpers: update message in infinite query cache ─── */
 
@@ -58,6 +59,18 @@ function removeMessageFromCache(roomId: string, messageId: string) {
   });
 }
 
+/* ─── Helper: request missed messages for a room ──────── */
+
+function requestMissedMessages(roomId: string) {
+  const keys = messageKeys.list(roomId);
+  const data = queryClient.getQueryData<InfiniteData<MessagesResponse>>(keys);
+  const lastMessageId =
+    data && data.pages.length > 0
+      ? data.pages[0].messages[data.pages[0].messages.length - 1]?.id ?? null
+      : null;
+  getWsClient().send("GetMissedMessages", { room_id: roomId, last_message_id: lastMessageId });
+}
+
 /* ─── Auto-connect on login, disconnect on logout ─────── */
 
 export function useWsConnection() {
@@ -104,6 +117,7 @@ export function useWsEventHandlers() {
           message_type: payload.message_type ?? "text",
           reply_to: payload.reply_to ?? null,
           reply_to_message: payload.reply_to_message ?? null,
+          file_url: payload.file_url ?? null,
           is_deleted: false,
           created_at: payload.created_at,
         };
@@ -171,6 +185,7 @@ export function useWsEventHandlers() {
             message_type: "system",
             reply_to: null,
             reply_to_message: null,
+            file_url: null,
             is_deleted: false,
             created_at: new Date().toISOString(),
           };
@@ -186,6 +201,15 @@ export function useWsEventHandlers() {
         queryClient.invalidateQueries({ queryKey: roomKeys.recent });
         if (payload.room_id) {
           queryClient.invalidateQueries({ queryKey: roomKeys.detail(payload.room_id) });
+        }
+      }),
+    );
+
+    /* ── Reconnect result → request missed messages for rooms to rejoin ── */
+    unsubscribers.push(
+      ws.on("ReconnectResult", (payload: ReconnectResultPayload) => {
+        if (payload.success && payload.rooms_to_rejoin) {
+          payload.rooms_to_rejoin.forEach((roomId) => requestMissedMessages(roomId));
         }
       }),
     );
@@ -260,9 +284,13 @@ export function useWsEventHandlers() {
       }),
     );
 
-    /* ── User status changed → invalidate user/user list caches ── */
+    /* ── User status changed → update own state + invalidate caches ── */
     unsubscribers.push(
       ws.on("UserStatusChanged", (payload: any) => {
+        const currentUserId = useAuthStore.getState().user?.id;
+        if (payload.user_id === currentUserId) {
+          useAuthStore.getState().setUserStatus(payload.status);
+        }
         queryClient.invalidateQueries({ queryKey: userKeys.me });
         queryClient.invalidateQueries({ queryKey: userKeys.user(payload.user_id) });
         queryClient.invalidateQueries({ queryKey: userKeys.all });

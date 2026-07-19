@@ -26,6 +26,7 @@ import { useWsConnection, useWsEventHandlers } from "@/lib/ws/hooks";
 import { queryClient } from "@/lib/hooks/queryClient";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import "@/global.css";
 import "@/lib/i18n";
 
@@ -68,11 +69,13 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
+          <NotificationProvider>
+            <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </NotificationProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

@@ -19,6 +19,7 @@ function createMessage(id: string, content: string): Message {
     message_type: "text",
     reply_to: null,
     reply_to_message: null,
+    file_url: null,
     is_deleted: false,
     created_at: "2026-01-01T00:00:00Z",
   };

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  View, Text, ScrollView, Pressable, Switch, Modal, TextInput, Alert, ActivityIndicator,
+  View, Text, ScrollView, Pressable, Switch, Modal, TextInput, Alert, ActivityIndicator, Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,13 +13,22 @@ import { localeLabels, supportedLocales } from "@/lib/i18n";
 import { useLanguageStore } from "@/lib/store/language";
 import { useUpdateMe, useUserStats, useChangePassword, useDeleteAccount } from "@/lib/hooks/useUsersQuery";
 import { useSettings, useUpdateSettings } from "@/lib/hooks/useSettingsQuery";
-import { useDevices, useTerminateAllOtherDevices, useLoginHistory } from "@/lib/hooks/useSecurityQuery";
+import {
+  useDevices,
+  useTerminateDevice,
+  useBlockDevice,
+  useUnblockDevice,
+  useTerminateAllOtherDevices,
+  useLoginHistory,
+} from "@/lib/hooks/useSecurityQuery";
 import { useFriends } from "@/lib/hooks/useFriendsQuery";
 import { useSaveUIConfig, useResetUIConfig } from "@/lib/hooks/useUIConfigQuery";
 import * as ImagePicker from "expo-image-picker";
+import { uploadAvatar } from "@/lib/api/files";
+import { getWsClient } from "@/lib/ws/client";
 import { SettingsDrawer } from "@/components/ui/SettingsDrawer";
 
-function Avatar({ name, size = 72 }: { name?: string; size?: number }) {
+function Avatar({ name, url, size = 72, loading }: { name?: string; url?: string | null; size?: number; loading?: boolean }) {
   const initial = name?.slice(0, 2).toUpperCase() ?? "?";
   const borderRadius = size * 0.33;
   return (
@@ -37,9 +46,18 @@ function Avatar({ name, size = 72 }: { name?: string; size?: number }) {
         elevation: 6,
       }}
     >
-      <Text className="font-sans-bold text-white" style={{ fontSize: size * 0.36 }}>
-        {initial}
-      </Text>
+      {url ? (
+        <Image source={{ uri: url }} className="h-full w-full" resizeMode="cover" />
+      ) : (
+        <Text className="font-sans-bold text-white" style={{ fontSize: size * 0.36 }}>
+          {initial}
+        </Text>
+      )}
+      {loading && (
+        <View className="absolute inset-0 items-center justify-center bg-black/30">
+          <ActivityIndicator size="small" color="white" />
+        </View>
+      )}
       <View
         className="absolute -bottom-0.5 -right-0.5 h-6 w-6 items-center justify-center rounded-lg border-2 border-cream"
         style={{ backgroundColor: "#2563EB" }}
@@ -134,11 +152,15 @@ export default function ProfileScreen() {
   const { mutate: deleteAccount } = useDeleteAccount();
   const { data: devices } = useDevices();
   const { data: loginHistoryData } = useLoginHistory(20);
+  const { mutate: terminateDevice } = useTerminateDevice();
+  const { mutate: blockDevice } = useBlockDevice();
+  const { mutate: unblockDevice } = useUnblockDevice();
   const { mutate: terminateOthers } = useTerminateAllOtherDevices();
   const { mutate: saveUIConfig } = useSaveUIConfig();
 
   const isDark = resolvedTheme === "dark";
   const [drawer, setDrawer] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   // Password change modal
   const [pwModalVisible, setPwModalVisible] = useState(false);
@@ -331,8 +353,23 @@ export default function ProfileScreen() {
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled && result.assets[0]) {
-      updateMe({ avatar_url: result.assets[0].uri });
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", {
+        uri: asset.uri,
+        name: asset.fileName ?? "avatar.jpg",
+        type: asset.mimeType ?? "image/jpeg",
+      } as any);
+      const fileInfo = await uploadAvatar(formData);
+      updateMe({ avatar_url: fileInfo.file_url });
+    } catch (err: any) {
+      Alert.alert("Upload failed", err?.message ?? "Could not upload avatar");
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -437,8 +474,8 @@ export default function ProfileScreen() {
 
         {/* Avatar + Name */}
         <View className="-mt-9 flex-row items-end gap-3.5 px-5">
-          <Pressable onPress={pickAvatar}>
-            <Avatar name={user?.username} />
+          <Pressable onPress={pickAvatar} disabled={avatarUploading}>
+            <Avatar name={user?.username} url={user?.avatar_url} loading={avatarUploading} />
           </Pressable>
           <View className="mb-1 flex-1">
             <Text className="font-display-bold text-xl text-ink">{user?.username ?? "User"}</Text>
@@ -471,6 +508,33 @@ export default function ProfileScreen() {
             </View>
           ))}
         </View>
+
+        {/* Online Status */}
+        <SettingsSection title={t("profile.status.title")}>
+          <SettingsItem
+            icon="radio-button-on-outline"
+            iconBg={colors.mintLight}
+            title={t("profile.status.current")}
+            subtitle={t(`profile.status.${user?.status ?? "offline"}`)}
+            onPress={() => {
+              const options: { key: "online" | "away" | "offline"; label: string }[] = [
+                { key: "online", label: t("profile.status.online") },
+                { key: "away", label: t("profile.status.away") },
+                { key: "offline", label: t("profile.status.offline") },
+              ];
+              Alert.alert(t("profile.status.changeTitle"), undefined, [
+                ...options.map((opt) => ({
+                  text: opt.label,
+                  onPress: () => {
+                    getWsClient().send("UpdateStatus", { status: opt.key });
+                    useAuthStore.getState().setUserStatus(opt.key);
+                  },
+                })),
+                { text: t("common.cancel"), style: "cancel" as const },
+              ]);
+            }}
+          />
+        </SettingsSection>
 
         {/* Quick Toggles */}
         <SettingsSection title={t("profile.quickToggles")}>
@@ -556,9 +620,24 @@ export default function ProfileScreen() {
             </View>
           </View>
           {(devices ?? []).slice(0, 3).map((device: any) => (
-            <View
+            <Pressable
               key={device.id}
-              className="flex-row items-center gap-2.5 border-t border-border-soft pt-2.5 mt-2.5 first:mt-0"
+              onPress={() => {
+                const actions: { text: string; style?: "default" | "cancel" | "destructive"; onPress?: () => void }[] = [
+                  {
+                    text: device.is_blocked ? t("profile.security.unblock") : t("profile.security.block"),
+                    onPress: () => (device.is_blocked ? unblockDevice(device.id) : blockDevice(device.id)),
+                  },
+                  {
+                    text: t("profile.security.terminate"),
+                    style: "destructive",
+                    onPress: () => terminateDevice(device.id),
+                  },
+                  { text: t("common.cancel"), style: "cancel" },
+                ];
+                Alert.alert(device.device_name ?? t("common.unknown"), t("profile.security.deviceActions"), actions);
+              }}
+              className="flex-row items-center gap-2.5 border-t border-border-soft pt-2.5 mt-2.5 first:mt-0 active:opacity-70"
             >
               <View className="h-7 w-7 items-center justify-center rounded-lg bg-surface-alt">
                 <Ionicons
@@ -571,10 +650,11 @@ export default function ProfileScreen() {
                 <Text className="text-[12px] font-sans-medium text-ink">{device.device_name ?? "Unknown"}</Text>
                 <Text className="text-[10px] text-ink-4">
                   {device.is_current ? t("profile.security.current") : device.location ?? ""}
+                  {device.is_blocked ? ` · ${t("profile.security.blocked")}` : ""}
                 </Text>
               </View>
               <View className={`h-2 w-2 rounded-full ${device.is_blocked ? "bg-rose" : device.is_current ? "bg-mint" : "bg-ink-4/40"}`} />
-            </View>
+            </Pressable>
           ))}
         </View>
 
@@ -704,41 +784,62 @@ export default function ProfileScreen() {
             <Text className="mb-3 text-center text-[17px] font-display-bold text-ink">{t("common.loginHistory")}</Text>
             <ScrollView className="px-5">
               {((loginHistoryData as any)?.data ?? []).length === 0 ? (
-                <Text className="py-8 text-center text-[13px] text-ink-3">No login history available</Text>
+                <Text className="py-8 text-center text-[13px] text-ink-3">{t("profile.security.noLoginHistory")}</Text>
               ) : (
-                ((loginHistoryData as any)?.data ?? []).map((entry: any) => (
-                  <View
-                    key={entry.id}
-                    className="flex-row items-center gap-3 border-b border-border-soft py-3.5"
-                  >
-                    <View
-                      className="h-8 w-8 items-center justify-center rounded-xl"
-                      style={{
-                        backgroundColor: entry.is_suspicious ? colors.roseLight : entry.login_status === "success" ? colors.mintLight : colors.peachLight,
+                ((loginHistoryData as any)?.data ?? []).map((entry: any) => {
+                  const matchingDevice = (devices ?? []).find(
+                    (d: any) => d.device_name === entry.device_name && d.device_type === entry.device_type,
+                  );
+                  return (
+                    <Pressable
+                      key={entry.id}
+                      onPress={() => {
+                        const actions: { text: string; style?: "default" | "cancel" | "destructive"; onPress?: () => void }[] = [];
+                        if (matchingDevice) {
+                          actions.push({
+                            text: matchingDevice.is_blocked ? t("profile.security.unblock") : t("profile.security.block"),
+                            onPress: () =>
+                              matchingDevice.is_blocked ? unblockDevice(matchingDevice.id) : blockDevice(matchingDevice.id),
+                          });
+                        }
+                        actions.push({ text: t("common.close"), style: "cancel" });
+                        Alert.alert(
+                          entry.is_suspicious ? t("profile.security.suspiciousLogin") : t("profile.security.loginDetail"),
+                          `${entry.device_name ?? t("common.unknown")}\n${entry.ip_address}${entry.location ? ` · ${entry.location}` : ""}\n${new Date(entry.created_at).toLocaleString()}`,
+                          actions,
+                        );
                       }}
+                      className="flex-row items-center gap-3 border-b border-border-soft py-3.5 active:opacity-70"
                     >
-                      <Ionicons
-                        name={entry.is_suspicious ? "warning-outline" : entry.login_status === "success" ? "checkmark" : "close"}
-                        size={14}
-                        style={{ color: entry.is_suspicious ? colors.roseText : entry.login_status === "success" ? colors.mintText : colors.peachText }}
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-[12px] font-sans-semibold text-ink">{entry.device_name ?? "Unknown device"}</Text>
-                      <Text className="text-[10px] text-ink-4">
-                        {entry.ip_address}{entry.location ? ` · ${entry.location}` : ""}
-                      </Text>
-                      <Text className="text-[10px] text-ink-4">
-                        {new Date(entry.created_at).toLocaleString()}
-                      </Text>
-                    </View>
-                    {entry.is_suspicious && (
-                      <View className="rounded-md bg-rose-light px-2 py-0.5">
-                        <Text className="text-[9px] font-sans-semibold text-rose-text">Suspicious</Text>
+                      <View
+                        className="h-8 w-8 items-center justify-center rounded-xl"
+                        style={{
+                          backgroundColor: entry.is_suspicious ? colors.roseLight : entry.login_status === "success" ? colors.mintLight : colors.peachLight,
+                        }}
+                      >
+                        <Ionicons
+                          name={entry.is_suspicious ? "warning-outline" : entry.login_status === "success" ? "checkmark" : "close"}
+                          size={14}
+                          style={{ color: entry.is_suspicious ? colors.roseText : entry.login_status === "success" ? colors.mintText : colors.peachText }}
+                        />
                       </View>
-                    )}
-                  </View>
-                ))
+                      <View className="flex-1">
+                        <Text className="text-[12px] font-sans-semibold text-ink">{entry.device_name ?? t("common.unknown")}</Text>
+                        <Text className="text-[10px] text-ink-4">
+                          {entry.ip_address}{entry.location ? ` · ${entry.location}` : ""}
+                        </Text>
+                        <Text className="text-[10px] text-ink-4">
+                          {new Date(entry.created_at).toLocaleString()}
+                        </Text>
+                      </View>
+                      {entry.is_suspicious && (
+                        <View className="rounded-md bg-rose-light px-2 py-0.5">
+                          <Text className="text-[9px] font-sans-semibold text-rose-text">{t("profile.security.suspicious")}</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })
               )}
             </ScrollView>
           </View>
