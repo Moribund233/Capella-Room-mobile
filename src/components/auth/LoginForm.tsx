@@ -43,7 +43,12 @@ type LoginMode = "password" | "code";
  * @param props - Login form props.
  * @returns A React element.
  */
-export function LoginForm({ onPasswordSubmit, onCodeSubmit, onSendCode, isLoading }: LoginFormProps) {
+export function LoginForm({
+  onPasswordSubmit,
+  onCodeSubmit,
+  onSendCode,
+  isLoading,
+}: LoginFormProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const [mode, setMode] = useState<LoginMode>("password");
@@ -116,7 +121,10 @@ export function LoginForm({ onPasswordSubmit, onCodeSubmit, onSendCode, isLoadin
                 label={t("auth.email")}
                 placeholder={t("auth.emailPlaceholder")}
                 value={value}
-                onChangeText={(v) => { onChange(v); codeForm.setValue("email", v); }}
+                onChangeText={(v) => {
+                  onChange(v);
+                  codeForm.setValue("email", v);
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 error={passwordForm.formState.errors.email?.message}
@@ -137,7 +145,11 @@ export function LoginForm({ onPasswordSubmit, onCodeSubmit, onSendCode, isLoadin
               />
             )}
           />
-          <Button title={t("auth.signIn")} onPress={passwordForm.handleSubmit(handlePasswordSubmit)} loading={isLoading} />
+          <Button
+            title={t("auth.signIn")}
+            onPress={passwordForm.handleSubmit(handlePasswordSubmit)}
+            loading={isLoading}
+          />
         </>
       ) : (
         <>
@@ -149,7 +161,10 @@ export function LoginForm({ onPasswordSubmit, onCodeSubmit, onSendCode, isLoadin
                 label={t("auth.email")}
                 placeholder={t("auth.emailPlaceholder")}
                 value={value}
-                onChangeText={(v) => { onChange(v); passwordForm.setValue("email", v); }}
+                onChangeText={(v) => {
+                  onChange(v);
+                  passwordForm.setValue("email", v);
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 error={codeForm.formState.errors.email?.message}
@@ -173,19 +188,33 @@ export function LoginForm({ onPasswordSubmit, onCodeSubmit, onSendCode, isLoadin
           />
           <View className="flex-row gap-2.5">
             <View className="flex-1">
-              <Button title={t("auth.sendCode")} onPress={handleSendCode} loading={sendingCode} variant="outline" />
+              <Button
+                title={t("auth.sendCode")}
+                onPress={handleSendCode}
+                loading={sendingCode}
+                variant="outline"
+              />
             </View>
             <View className="flex-1">
-              <Button title={t("auth.signIn")} onPress={codeForm.handleSubmit(handleCodeSubmit)} loading={isLoading} />
+              <Button
+                title={t("auth.signIn")}
+                onPress={codeForm.handleSubmit(handleCodeSubmit)}
+                loading={isLoading}
+              />
             </View>
           </View>
         </>
       )}
 
       {/* Toggle between password and code login */}
-      <Pressable onPress={() => setMode(mode === "password" ? "code" : "password")} className="items-center pt-1">
+      <Pressable
+        onPress={() => setMode(mode === "password" ? "code" : "password")}
+        className="items-center pt-1"
+      >
         <Text className="text-[12px] font-sans-semibold" style={{ color: colors.purple }}>
-          {mode === "password" ? t("auth.loginWithCode") ?? "Email code login" : t("auth.loginWithPassword") ?? "Password login"}
+          {mode === "password"
+            ? (t("auth.loginWithCode") ?? "Email code login")
+            : (t("auth.loginWithPassword") ?? "Password login")}
         </Text>
       </Pressable>
 

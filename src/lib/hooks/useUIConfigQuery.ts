@@ -19,7 +19,8 @@ export function useUIConfig() {
 
 export function useSaveUIConfig() {
   return useMutation({
-    mutationFn: (config: Partial<uiConfigApi.UIConfig>) => uiConfigApi.saveUIConfig(config),
+    mutationFn: (config: Partial<uiConfigApi.UIConfig>) =>
+      uiConfigApi.saveUIConfig(config),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: uiConfigKeys.all });
     },

@@ -38,7 +38,10 @@ function CustomTabBar() {
           <Pressable
             key={tab.name}
             onPress={() => {
-              const href = tab.name === "index" ? "/(tabs)" as Href : `/(tabs)/${tab.name}` as Href;
+              const href =
+                tab.name === "index"
+                  ? ("/(tabs)" as Href)
+                  : (`/(tabs)/${tab.name}` as Href);
               if (currentTab !== tab.name) router.replace(href);
             }}
             className="flex-1 items-center justify-center"
@@ -64,10 +67,7 @@ function CustomTabBar() {
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{ headerShown: false }}
-      tabBar={() => <CustomTabBar />}
-    >
+    <Tabs screenOptions={{ headerShown: false }} tabBar={() => <CustomTabBar />}>
       {TABS.map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} />
       ))}

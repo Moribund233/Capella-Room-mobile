@@ -47,7 +47,10 @@ export function EmojiPicker({ visible, onSelect, onClose }: EmojiPickerProps) {
           <Text className="text-[16px] font-sans-semibold text-ink">
             {t("chat.addReaction")}
           </Text>
-          <Pressable onPress={onClose} className="h-8 w-8 items-center justify-center rounded-full active:bg-surface-alt">
+          <Pressable
+            onPress={onClose}
+            className="h-8 w-8 items-center justify-center rounded-full active:bg-surface-alt"
+          >
             <Ionicons name="close" size={20} color={colors.ink3} />
           </Pressable>
         </View>

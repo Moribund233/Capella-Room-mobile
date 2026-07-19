@@ -26,7 +26,10 @@ export function useAudioRecorder() {
   const requestPermissions = useCallback(async () => {
     const { status } = await Audio.requestPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission required", "Microphone access is needed to record voice messages.");
+      Alert.alert(
+        "Permission required",
+        "Microphone access is needed to record voice messages.",
+      );
       return false;
     }
     await Audio.setAudioModeAsync({
@@ -41,7 +44,9 @@ export function useAudioRecorder() {
     const granted = await requestPermissions();
     if (!granted) return;
 
-    const { recording } = await Audio.Recording.createAsync(RecordingOptionsPresets.HIGH_QUALITY);
+    const { recording } = await Audio.Recording.createAsync(
+      RecordingOptionsPresets.HIGH_QUALITY,
+    );
     recordingRef.current = recording;
     setIsRecording(true);
     setDurationMillis(0);
@@ -59,7 +64,8 @@ export function useAudioRecorder() {
       durationIntervalRef.current = null;
     }
     setIsRecording(false);
-    const status = (await recording.stopAndUnloadAsync()) as { durationMillis?: number } | undefined;
+    const status = (await recording.stopAndUnloadAsync()) as
+      { durationMillis?: number } | undefined;
     const uri = recording.getURI();
     recordingRef.current = null;
 

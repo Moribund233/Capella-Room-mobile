@@ -68,16 +68,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     });
 
-    notificationListenerRef.current = Notifications.addNotificationReceivedListener((notification) => {
-      console.log("Notification received:", notification.request.content.data);
-    });
+    notificationListenerRef.current = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("Notification received:", notification.request.content.data);
+      },
+    );
 
-    responseListenerRef.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as { room_id?: string } | undefined;
-      if (data?.room_id) {
-        router.push(`/room/${data.room_id}` as any);
-      }
-    });
+    responseListenerRef.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data as
+          { room_id?: string } | undefined;
+        if (data?.room_id) {
+          router.push(`/room/${data.room_id}` as any);
+        }
+      },
+    );
 
     return () => {
       notificationListenerRef.current?.remove();

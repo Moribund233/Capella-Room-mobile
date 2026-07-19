@@ -78,7 +78,9 @@ export async function refreshApi(refreshToken: string): Promise<RefreshResponse>
 
 /* ─── v2 API ───────────────────────────────────────────── */
 
-export async function sendRegisterCodeApi(email: string): Promise<{ message: string; code_length: number }> {
+export async function sendRegisterCodeApi(
+  email: string,
+): Promise<{ message: string; code_length: number }> {
   return rawRequest("/api/v2/auth/register/send-code", {
     method: "POST",
     body: JSON.stringify({ email }),
@@ -97,7 +99,9 @@ export async function v2RegisterApi(
   });
 }
 
-export async function sendLoginCodeApi(email: string): Promise<{ message: string; code_length: number }> {
+export async function sendLoginCodeApi(
+  email: string,
+): Promise<{ message: string; code_length: number }> {
   return rawRequest("/api/v2/auth/login/send-code", {
     method: "POST",
     body: JSON.stringify({ email }),

@@ -62,15 +62,17 @@ function Avatar({
   return (
     <View
       className="relative items-center justify-center overflow-hidden"
-      style={{ width: size, height: size, borderRadius, backgroundColor: bg ?? undefined }}
+      style={{
+        width: size,
+        height: size,
+        borderRadius,
+        backgroundColor: bg ?? undefined,
+      }}
     >
       {emoji ? (
         <Text style={{ fontSize: size * 0.45 }}>{emoji}</Text>
       ) : (
-        <Text
-          className="font-sans-semibold text-white"
-          style={{ fontSize: size * 0.3 }}
-        >
+        <Text className="font-sans-semibold text-white" style={{ fontSize: size * 0.3 }}>
           {initial}
         </Text>
       )}
@@ -192,12 +194,7 @@ function OnlineFriendsStrip({ friends }: { friends?: User[] }) {
             disabled={loadingId === friend.id}
             className="items-center"
           >
-            <Avatar
-              name={friend.username}
-              emoji={friend.avatar_url}
-              size={44}
-              online
-            />
+            <Avatar name={friend.username} emoji={friend.avatar_url} size={44} online />
             {loadingId === friend.id && (
               <View className="absolute h-11 w-11 items-center justify-center rounded-full bg-black/20">
                 <ActivityIndicator size="small" color="#FFFFFF" />
@@ -221,20 +218,17 @@ function getRoomDisplayName(room: Room): string {
   return "Untitled";
 }
 
-function getMessagePreview(lastMessage: LastMessage | null | undefined, currentUserId?: string): string {
+function getMessagePreview(
+  lastMessage: LastMessage | null | undefined,
+  currentUserId?: string,
+): string {
   if (!lastMessage) return "";
   const isMe = currentUserId ? lastMessage.sender_name === currentUserId : false;
   const prefix = isMe ? "You:" : `${lastMessage.sender_name}:`;
   return `${prefix} ${lastMessage.content}`;
 }
 
-function ConversationItem({
-  room,
-  pinned,
-}: {
-  room: Room;
-  pinned?: boolean;
-}) {
+function ConversationItem({ room, pinned }: { room: Room; pinned?: boolean }) {
   const router = useRouter();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const displayName = getRoomDisplayName(room);
@@ -252,13 +246,18 @@ function ConversationItem({
       <Avatar name={displayName} size={44} />
       <View className="flex-1">
         <View className="flex-row items-center justify-between">
-          <Text className="flex-1 text-[14px] font-sans-semibold text-ink" numberOfLines={1}>
+          <Text
+            className="flex-1 text-[14px] font-sans-semibold text-ink"
+            numberOfLines={1}
+          >
             {displayName}
           </Text>
           {!!time && <Text className="ml-2 text-[11px] text-ink-4">{time}</Text>}
         </View>
         <View className="mt-0.5 flex-row items-center">
-          {pinned && <Ionicons name="pin" size={12} color="#F4A261" style={{ marginRight: 2 }} />}
+          {pinned && (
+            <Ionicons name="pin" size={12} color="#F4A261" style={{ marginRight: 2 }} />
+          )}
           <Text
             className={`flex-1 text-[12.5px] ${
               unread > 0 ? "font-sans-medium text-ink" : "text-ink-3"
@@ -277,7 +276,8 @@ function ConversationItem({
         </View>
       </View>
       {unread > 0 && (
-        <View className="absolute bottom-[14px] right-3 h-[18px] min-w-[18px] items-center justify-center rounded-full px-[5px]"
+        <View
+          className="absolute bottom-[14px] right-3 h-[18px] min-w-[18px] items-center justify-center rounded-full px-[5px]"
           style={{ backgroundColor: pinned ? "#94A3B8" : "#2563EB" }}
         >
           <Text className="text-[10px] font-sans-bold text-white">
@@ -297,7 +297,9 @@ function EmptyState({ onRefresh }: { onRefresh: () => void }) {
       <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-purple-light">
         <Ionicons name="chatbubbles-outline" size={28} color={colors.purple} />
       </View>
-      <Text className="text-lg font-sans-semibold text-ink">{t("home.noConversations")}</Text>
+      <Text className="text-lg font-sans-semibold text-ink">
+        {t("home.noConversations")}
+      </Text>
       <Text className="mt-1 text-center text-sm text-ink-3">{t("home.emptyHint")}</Text>
       <Pressable
         onPress={onRefresh}
@@ -388,7 +390,9 @@ export default function HomeScreen() {
               onPress={handleRefresh}
               className="mt-2 self-start rounded-full bg-rose px-4 py-1.5"
             >
-              <Text className="text-xs font-sans-semibold text-white">{t("common.retry")}</Text>
+              <Text className="text-xs font-sans-semibold text-white">
+                {t("common.retry")}
+              </Text>
             </Pressable>
           </View>
         )}
@@ -418,8 +422,12 @@ export default function HomeScreen() {
             {recentRooms.length > 0 && (
               <View className="mb-4">
                 <View className="mb-2.5 flex-row items-center justify-between px-5">
-                  <Text className="text-[13px] font-sans-bold text-ink-2">{t("home.recent")}</Text>
-                  <Text className="text-[12px] font-sans-semibold text-purple">{t("common.seeAll")}</Text>
+                  <Text className="text-[13px] font-sans-bold text-ink-2">
+                    {t("home.recent")}
+                  </Text>
+                  <Text className="text-[12px] font-sans-semibold text-purple">
+                    {t("common.seeAll")}
+                  </Text>
                 </View>
                 <View className="px-3">
                   {recentRooms.map((room) => (

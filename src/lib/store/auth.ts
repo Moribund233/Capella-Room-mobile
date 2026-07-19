@@ -12,6 +12,7 @@ import {
   v2LoginWithPasswordApi,
 } from "../api/auth";
 import { setAuthGetters } from "@/lib/auth/token";
+import { resetLocalDatabase } from "@/lib/db/database";
 import type { User } from "../api/auth";
 
 function getDeviceName(): string {
@@ -73,7 +74,12 @@ interface AuthState {
   register: (username: string, email: string, password: string) => Promise<void>;
   loginWithCode: (email: string, code: string) => Promise<void>;
   loginWithPassword: (email: string, password: string) => Promise<void>;
-  registerWithCode: (email: string, code: string, username: string, password: string) => Promise<void>;
+  registerWithCode: (
+    email: string,
+    code: string,
+    username: string,
+    password: string,
+  ) => Promise<void>;
   sendRegisterCode: (email: string) => Promise<{ message: string; code_length: number }>;
   sendLoginCode: (email: string) => Promise<{ message: string; code_length: number }>;
   logout: () => Promise<void>;
@@ -154,7 +160,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   /* ── v2: register with verification code ── */
-  registerWithCode: async (email: string, code: string, username: string, password: string) => {
+  registerWithCode: async (
+    email: string,
+    code: string,
+    username: string,
+    password: string,
+  ) => {
     set({ isLoading: true });
     try {
       const result = await v2RegisterApi(email, code, username, password);
@@ -201,7 +212,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loginWithPassword: async (email: string, password: string) => {
     set({ isLoading: true });
     try {
-      const result = await v2LoginWithPasswordApi(email, password, getDeviceName(), getDeviceType());
+      const result = await v2LoginWithPasswordApi(
+        email,
+        password,
+        getDeviceName(),
+        getDeviceType(),
+      );
       await Promise.all([
         setItem(ACCESS_TOKEN_KEY, result.access_token),
         setItem(REFRESH_TOKEN_KEY, result.refresh_token),
@@ -237,6 +253,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       removeItem(ACCESS_TOKEN_KEY),
       removeItem(REFRESH_TOKEN_KEY),
       removeItem(USER_KEY),
+      resetLocalDatabase().catch((err) => {
+        console.warn("[Auth] Failed to reset local database on logout:", err);
+      }),
     ]);
     set({ user: null, accessToken: null, refreshToken: null });
   },

@@ -49,7 +49,6 @@ export default {
     subtitle:
       "Real-time messaging for communities, teams & friends. Fast, beautiful, and private.",
 
-
     signIn: "Sign In",
     createAccount: "Create Account",
     email: "Email",
@@ -177,6 +176,7 @@ export default {
     voiceMessage: "Voice message",
     voiceTooShort: "Recording too short",
     openLinkFailed: "Could not open link",
+    offlineFallback: "Offline mode: showing cached messages only",
   },
 
   // ── Discover ───────────────────────────────────────────────

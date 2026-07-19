@@ -28,7 +28,13 @@ export interface UIConfig {
       enabled: boolean;
       position: "bottom" | "left" | "right";
       offset: number;
-      items: { key: string; label: string; icon: string; path: string; disabled?: boolean }[];
+      items: {
+        key: string;
+        label: string;
+        icon: string;
+        path: string;
+        disabled?: boolean;
+      }[];
     }
   >;
 }
@@ -37,7 +43,9 @@ export async function getUIConfig(): Promise<UIConfig> {
   return request<UIConfig>("/api/v1/ui/config", { method: "GET" });
 }
 
-export async function saveUIConfig(config: Partial<UIConfig>): Promise<{ message: string }> {
+export async function saveUIConfig(
+  config: Partial<UIConfig>,
+): Promise<{ message: string }> {
   return request<{ message: string }>("/api/v1/ui/config", {
     method: "POST",
     body: JSON.stringify(config),

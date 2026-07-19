@@ -8,6 +8,6 @@ module.exports = {
   transformIgnorePatterns: [
     // Allow transformation of React Native / Expo packages even when resolved
     // through pnpm's content-addressable store under node_modules/.pnpm/.
-    "node_modules/(?!.*((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|nativewind|react-native-css-interop|react-native-reanimated|tailwindcss|msw|@mswjs/.*|@open-draft/.*|@bundled-es-modules/.*|headers-polyfill|is-node-process|outvariant|strict-event-emitter|type-fest|rettime|until-async))",
+    "node_modules/(?!.*((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|nativewind|react-native-css-interop|react-native-reanimated|tailwindcss|msw|@mswjs/.*|@open-draft/.*|@bundled-es-modules/.*|headers-polyfill|is-node-process|outvariant|strict-event-emitter|type-fest|rettime|until-async|@nozbe|watermelondb))/",
   ],
 };

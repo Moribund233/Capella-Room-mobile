@@ -29,7 +29,10 @@ function formatDuration(ms: number) {
  * @param props - Component props.
  * @returns A React element.
  */
-export function AudioMessage({ fileUrl, durationMillis: initialDuration }: AudioMessageProps) {
+export function AudioMessage({
+  fileUrl,
+  durationMillis: initialDuration,
+}: AudioMessageProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -111,7 +114,9 @@ export function AudioMessage({ fileUrl, durationMillis: initialDuration }: Audio
           )}
         </Pressable>
         <View className="flex-1">
-          <Text className="text-[12px] font-sans-semibold text-ink">{t("chat.voiceMessage")}</Text>
+          <Text className="text-[12px] font-sans-semibold text-ink">
+            {t("chat.voiceMessage")}
+          </Text>
           <View className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-alt">
             <View
               className="h-full rounded-full bg-purple"

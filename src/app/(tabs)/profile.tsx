@@ -1,6 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  View, Text, ScrollView, Pressable, Switch, Modal, TextInput, Alert, ActivityIndicator, Image,
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  Switch,
+  Modal,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +20,12 @@ import { useThemeColors } from "@/lib/hooks/useThemeColors";
 import { useThemeStore } from "@/lib/store/theme";
 import { localeLabels, supportedLocales } from "@/lib/i18n";
 import { useLanguageStore } from "@/lib/store/language";
-import { useUpdateMe, useUserStats, useChangePassword, useDeleteAccount } from "@/lib/hooks/useUsersQuery";
+import {
+  useUpdateMe,
+  useUserStats,
+  useChangePassword,
+  useDeleteAccount,
+} from "@/lib/hooks/useUsersQuery";
 import { useSettings, useUpdateSettings } from "@/lib/hooks/useSettingsQuery";
 import {
   useDevices,
@@ -28,7 +42,17 @@ import { uploadAvatar } from "@/lib/api/files";
 import { getWsClient } from "@/lib/ws/client";
 import { SettingsDrawer } from "@/components/ui/SettingsDrawer";
 
-function Avatar({ name, url, size = 72, loading }: { name?: string; url?: string | null; size?: number; loading?: boolean }) {
+function Avatar({
+  name,
+  url,
+  size = 72,
+  loading,
+}: {
+  name?: string;
+  url?: string | null;
+  size?: number;
+  loading?: boolean;
+}) {
   const initial = name?.slice(0, 2).toUpperCase() ?? "?";
   const borderRadius = size * 0.33;
   return (
@@ -118,7 +142,13 @@ function SettingsItem({
   );
 }
 
-function SettingsSection({ title, children }: { title: string; children: React.ReactNode }) {
+function SettingsSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <View className="mb-4 px-5">
       <Text className="mb-2 px-1 text-[11px] font-sans-bold uppercase tracking-wider text-ink-4">
@@ -174,7 +204,9 @@ export default function ProfileScreen() {
   const settingsInitialized = useRef(false);
   const [localNotif, setLocalNotif] = useState<Record<string, boolean>>({});
   const [localPrivacy, setLocalPrivacy] = useState<Record<string, boolean | string>>({});
-  const [localAccessibility, setLocalAccessibility] = useState<Record<string, boolean | string>>({});
+  const [localAccessibility, setLocalAccessibility] = useState<
+    Record<string, boolean | string>
+  >({});
   const [localMedia, setLocalMedia] = useState<Record<string, boolean | string>>({});
 
   useEffect(() => {
@@ -230,7 +262,11 @@ export default function ProfileScreen() {
       if (map[key]) {
         payload[map[key]] = value;
       }
-      updateSettings({ notification: userSettings?.notification ? { ...userSettings.notification, ...payload } : undefined } as any);
+      updateSettings({
+        notification: userSettings?.notification
+          ? { ...userSettings.notification, ...payload }
+          : undefined,
+      } as any);
     },
     [updateSettings, userSettings],
   );
@@ -263,7 +299,9 @@ export default function ProfileScreen() {
         denseMode: "dense_mode",
       };
       if (key === "fontSize") {
-        updateSettings({ accessibility: { ...userSettings.accessibility, font_size: value as any } } as any);
+        updateSettings({
+          accessibility: { ...userSettings.accessibility, font_size: value as any },
+        } as any);
       } else if (map[key]) {
         updateSettings({
           accessibility: { ...userSettings.accessibility, [map[key]]: value },
@@ -376,37 +414,128 @@ export default function ProfileScreen() {
   const closeDrawer = useCallback(() => setDrawer(null), []);
 
   const notifOptions = [
-    { label: t("settings.notifications.privateMessage"), toggle: true, toggleValue: localNotif.privateMessage ?? true, onPress: () => toggleNotif("privateMessage", !localNotif.privateMessage) },
-    { label: t("settings.notifications.mentioned"), toggle: true, toggleValue: localNotif.mentioned ?? true, onPress: () => toggleNotif("mentioned", !localNotif.mentioned) },
-    { label: t("settings.notifications.roomInvitation"), toggle: true, toggleValue: localNotif.roomInvitation ?? true, onPress: () => toggleNotif("roomInvitation", !localNotif.roomInvitation) },
-    { label: t("settings.notifications.systemNotification"), toggle: true, toggleValue: localNotif.systemNotification ?? true, onPress: () => toggleNotif("systemNotification", !localNotif.systemNotification) },
-    { label: t("settings.notifications.fileUploadComplete"), toggle: true, toggleValue: localNotif.fileUpload ?? true, onPress: () => toggleNotif("fileUpload", !localNotif.fileUpload) },
-    { label: t("settings.notifications.sound"), toggle: true, toggleValue: localNotif.sound ?? true, onPress: () => toggleNotif("sound", !localNotif.sound) },
-    { label: t("settings.notifications.desktop"), toggle: true, toggleValue: localNotif.desktop ?? true, onPress: () => toggleNotif("desktop", !localNotif.desktop) },
-    { label: t("settings.notifications.doNotDisturb"), toggle: true, toggleValue: localNotif.dnd ?? false, onPress: () => toggleNotif("dnd", !localNotif.dnd) },
+    {
+      label: t("settings.notifications.privateMessage"),
+      toggle: true,
+      toggleValue: localNotif.privateMessage ?? true,
+      onPress: () => toggleNotif("privateMessage", !localNotif.privateMessage),
+    },
+    {
+      label: t("settings.notifications.mentioned"),
+      toggle: true,
+      toggleValue: localNotif.mentioned ?? true,
+      onPress: () => toggleNotif("mentioned", !localNotif.mentioned),
+    },
+    {
+      label: t("settings.notifications.roomInvitation"),
+      toggle: true,
+      toggleValue: localNotif.roomInvitation ?? true,
+      onPress: () => toggleNotif("roomInvitation", !localNotif.roomInvitation),
+    },
+    {
+      label: t("settings.notifications.systemNotification"),
+      toggle: true,
+      toggleValue: localNotif.systemNotification ?? true,
+      onPress: () => toggleNotif("systemNotification", !localNotif.systemNotification),
+    },
+    {
+      label: t("settings.notifications.fileUploadComplete"),
+      toggle: true,
+      toggleValue: localNotif.fileUpload ?? true,
+      onPress: () => toggleNotif("fileUpload", !localNotif.fileUpload),
+    },
+    {
+      label: t("settings.notifications.sound"),
+      toggle: true,
+      toggleValue: localNotif.sound ?? true,
+      onPress: () => toggleNotif("sound", !localNotif.sound),
+    },
+    {
+      label: t("settings.notifications.desktop"),
+      toggle: true,
+      toggleValue: localNotif.desktop ?? true,
+      onPress: () => toggleNotif("desktop", !localNotif.desktop),
+    },
+    {
+      label: t("settings.notifications.doNotDisturb"),
+      toggle: true,
+      toggleValue: localNotif.dnd ?? false,
+      onPress: () => toggleNotif("dnd", !localNotif.dnd),
+    },
   ];
 
   const privacyOptions = [
-    { label: t("settings.privacy.onlineStatus"), value: String(localPrivacy.onlineStatus ?? "everyone"), onPress: () => {} },
-    { label: t("settings.privacy.profileVisibility"), value: String(localPrivacy.profileVisibility ?? "everyone"), onPress: () => {} },
-    { label: t("settings.privacy.allowStrangerMessage"), toggle: true, toggleValue: !!localPrivacy.allowStrangerMessage, onPress: () => togglePrivacy("allowStrangerMessage", !localPrivacy.allowStrangerMessage) },
-    { label: t("settings.privacy.singleDeviceLogin"), toggle: true, toggleValue: !!localPrivacy.singleDeviceLogin, onPress: () => togglePrivacy("singleDeviceLogin", !localPrivacy.singleDeviceLogin) },
-    { label: t("settings.privacy.allowRoomInvitation"), toggle: true, toggleValue: !!localPrivacy.allowRoomInvitation, onPress: () => togglePrivacy("allowRoomInvitation", !localPrivacy.allowRoomInvitation) },
+    {
+      label: t("settings.privacy.onlineStatus"),
+      value: String(localPrivacy.onlineStatus ?? "everyone"),
+      onPress: () => {},
+    },
+    {
+      label: t("settings.privacy.profileVisibility"),
+      value: String(localPrivacy.profileVisibility ?? "everyone"),
+      onPress: () => {},
+    },
+    {
+      label: t("settings.privacy.allowStrangerMessage"),
+      toggle: true,
+      toggleValue: !!localPrivacy.allowStrangerMessage,
+      onPress: () =>
+        togglePrivacy("allowStrangerMessage", !localPrivacy.allowStrangerMessage),
+    },
+    {
+      label: t("settings.privacy.singleDeviceLogin"),
+      toggle: true,
+      toggleValue: !!localPrivacy.singleDeviceLogin,
+      onPress: () => togglePrivacy("singleDeviceLogin", !localPrivacy.singleDeviceLogin),
+    },
+    {
+      label: t("settings.privacy.allowRoomInvitation"),
+      toggle: true,
+      toggleValue: !!localPrivacy.allowRoomInvitation,
+      onPress: () =>
+        togglePrivacy("allowRoomInvitation", !localPrivacy.allowRoomInvitation),
+    },
   ];
 
   const appearanceOptions = [
-    { label: t("settings.appearance.theme.title"), value: isDark ? t("settings.appearance.theme.dark") : t("settings.appearance.theme.light"), onPress: () => {
-      const mode = isDark ? "light" : "dark";
-      setMode(mode);
-      saveUIConfig({ theme: { name: mode } });
-    }},
-    { label: t("settings.appearance.fontSize"), value: String(localAccessibility.fontSize ?? "medium"), onPress: () => {
-      const cycle: Record<string, string> = { small: "medium", medium: "large", large: "small" };
-      const next = cycle[String(localAccessibility.fontSize ?? "medium")] || "medium";
-      toggleAccessibility("fontSize", next);
-    }},
-    { label: t("settings.appearance.highContrast"), toggle: true, toggleValue: !!localAccessibility.highContrast, onPress: () => toggleAccessibility("highContrast", !localAccessibility.highContrast) },
-    { label: t("settings.appearance.reduceAnimations"), toggle: true, toggleValue: !!localAccessibility.reduceMotion, onPress: () => toggleAccessibility("reduceMotion", !localAccessibility.reduceMotion) },
+    {
+      label: t("settings.appearance.theme.title"),
+      value: isDark
+        ? t("settings.appearance.theme.dark")
+        : t("settings.appearance.theme.light"),
+      onPress: () => {
+        const mode = isDark ? "light" : "dark";
+        setMode(mode);
+        saveUIConfig({ theme: { name: mode } });
+      },
+    },
+    {
+      label: t("settings.appearance.fontSize"),
+      value: String(localAccessibility.fontSize ?? "medium"),
+      onPress: () => {
+        const cycle: Record<string, string> = {
+          small: "medium",
+          medium: "large",
+          large: "small",
+        };
+        const next = cycle[String(localAccessibility.fontSize ?? "medium")] || "medium";
+        toggleAccessibility("fontSize", next);
+      },
+    },
+    {
+      label: t("settings.appearance.highContrast"),
+      toggle: true,
+      toggleValue: !!localAccessibility.highContrast,
+      onPress: () =>
+        toggleAccessibility("highContrast", !localAccessibility.highContrast),
+    },
+    {
+      label: t("settings.appearance.reduceAnimations"),
+      toggle: true,
+      toggleValue: !!localAccessibility.reduceMotion,
+      onPress: () =>
+        toggleAccessibility("reduceMotion", !localAccessibility.reduceMotion),
+    },
   ];
 
   const languageOptions = supportedLocales.map((loc) => ({
@@ -416,38 +545,86 @@ export default function ProfileScreen() {
   }));
 
   const securityOptions = [
-    { label: t("common.changePassword") ?? "Change Password", onPress: () => setPwModalVisible(true) },
-    { label: t("common.loginHistory") ?? "Login History", onPress: () => setLoginHistoryVisible(true) },
+    {
+      label: t("common.changePassword") ?? "Change Password",
+      onPress: () => setPwModalVisible(true),
+    },
+    {
+      label: t("common.loginHistory") ?? "Login History",
+      onPress: () => setLoginHistoryVisible(true),
+    },
     ...(devices && devices.length > 1
-      ? [{
-          label: t("profile.security.terminateOthers") ?? "Terminate other devices",
-          onPress: () => {
-            Alert.alert("Terminate Others", "Log out all other devices?", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Terminate", style: "destructive", onPress: () => terminateOthers() },
-            ]);
+      ? [
+          {
+            label: t("profile.security.terminateOthers") ?? "Terminate other devices",
+            onPress: () => {
+              Alert.alert("Terminate Others", "Log out all other devices?", [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Terminate",
+                  style: "destructive",
+                  onPress: () => terminateOthers(),
+                },
+              ]);
+            },
           },
-        }]
+        ]
       : []),
   ];
 
   const { mutate: resetUIConfig } = useResetUIConfig();
   const storageOptions = [
-    { label: "Auto-download Media", toggle: true, toggleValue: !!localMedia.autoDownloadMedia, onPress: () => toggleMedia("autoDownloadMedia", !localMedia.autoDownloadMedia) },
-    { label: "Save to Gallery", toggle: true, toggleValue: !!localMedia.saveMediaGallery, onPress: () => toggleMedia("saveMediaGallery", !localMedia.saveMediaGallery) },
-    { label: "Auto-play Video", toggle: true, toggleValue: !!localMedia.autoPlayVideo, onPress: () => toggleMedia("autoPlayVideo", !localMedia.autoPlayVideo) },
-    { label: "Auto-play Audio", toggle: true, toggleValue: !!localMedia.autoPlayAudio, onPress: () => toggleMedia("autoPlayAudio", !localMedia.autoPlayAudio) },
-    { label: "Image Quality", value: String(localMedia.imageQuality ?? "high"), onPress: () => {
-      const cycle: Record<string, string> = { original: "high", high: "medium", medium: "low", low: "original" };
-      const next = cycle[String(localMedia.imageQuality ?? "high")] || "high";
-      toggleMedia("imageQuality", next);
-    }},
-    { label: "Reset Cloud UI Config", onPress: () => {
-      Alert.alert("Reset UI Config", "Reset your cloud-synced UI settings to default?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Reset", style: "destructive", onPress: () => resetUIConfig() },
-      ]);
-    }},
+    {
+      label: "Auto-download Media",
+      toggle: true,
+      toggleValue: !!localMedia.autoDownloadMedia,
+      onPress: () => toggleMedia("autoDownloadMedia", !localMedia.autoDownloadMedia),
+    },
+    {
+      label: "Save to Gallery",
+      toggle: true,
+      toggleValue: !!localMedia.saveMediaGallery,
+      onPress: () => toggleMedia("saveMediaGallery", !localMedia.saveMediaGallery),
+    },
+    {
+      label: "Auto-play Video",
+      toggle: true,
+      toggleValue: !!localMedia.autoPlayVideo,
+      onPress: () => toggleMedia("autoPlayVideo", !localMedia.autoPlayVideo),
+    },
+    {
+      label: "Auto-play Audio",
+      toggle: true,
+      toggleValue: !!localMedia.autoPlayAudio,
+      onPress: () => toggleMedia("autoPlayAudio", !localMedia.autoPlayAudio),
+    },
+    {
+      label: "Image Quality",
+      value: String(localMedia.imageQuality ?? "high"),
+      onPress: () => {
+        const cycle: Record<string, string> = {
+          original: "high",
+          high: "medium",
+          medium: "low",
+          low: "original",
+        };
+        const next = cycle[String(localMedia.imageQuality ?? "high")] || "high";
+        toggleMedia("imageQuality", next);
+      },
+    },
+    {
+      label: "Reset Cloud UI Config",
+      onPress: () => {
+        Alert.alert(
+          "Reset UI Config",
+          "Reset your cloud-synced UI settings to default?",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Reset", style: "destructive", onPress: () => resetUIConfig() },
+          ],
+        );
+      },
+    },
     { label: t("common.clearCache") ?? "Clear Cache", onPress: () => {} },
   ];
 
@@ -455,9 +632,18 @@ export default function ProfileScreen() {
     <View className="flex-1 bg-cream" style={{ paddingTop: insets.top }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Banner */}
-        <View className="relative h-[140px] overflow-hidden" style={{ backgroundColor: "#EFF6FF" }}>
-          <View className="absolute inset-0" style={{ backgroundColor: "#FFF7ED", opacity: 0.3 }} />
-          <View className="absolute inset-0" style={{ backgroundColor: "#ECFDF5", opacity: 0.2 }} />
+        <View
+          className="relative h-[140px] overflow-hidden"
+          style={{ backgroundColor: "#EFF6FF" }}
+        >
+          <View
+            className="absolute inset-0"
+            style={{ backgroundColor: "#FFF7ED", opacity: 0.3 }}
+          />
+          <View
+            className="absolute inset-0"
+            style={{ backgroundColor: "#ECFDF5", opacity: 0.2 }}
+          />
           <View
             className="absolute -right-5 -top-5 h-[120px] w-[120px] rounded-full"
             style={{ backgroundColor: "rgba(37,99,235,0.18)" }}
@@ -475,10 +661,16 @@ export default function ProfileScreen() {
         {/* Avatar + Name */}
         <View className="-mt-9 flex-row items-end gap-3.5 px-5">
           <Pressable onPress={pickAvatar} disabled={avatarUploading}>
-            <Avatar name={user?.username} url={user?.avatar_url} loading={avatarUploading} />
+            <Avatar
+              name={user?.username}
+              url={user?.avatar_url}
+              loading={avatarUploading}
+            />
           </Pressable>
           <View className="mb-1 flex-1">
-            <Text className="font-display-bold text-xl text-ink">{user?.username ?? "User"}</Text>
+            <Text className="font-display-bold text-xl text-ink">
+              {user?.username ?? "User"}
+            </Text>
             <Text className="text-[12px] text-ink-3">{user?.email ?? ""}</Text>
           </View>
         </View>
@@ -488,14 +680,22 @@ export default function ProfileScreen() {
           <Text className="text-[12.5px] leading-[1.55] text-ink-2">
             Hey there! I&apos;m using Capella Room.
           </Text>
-          <Text className="mt-1 font-hand text-[17px] text-purple">✦ making connections</Text>
+          <Text className="mt-1 font-hand text-[17px] text-purple">
+            ✦ making connections
+          </Text>
         </View>
 
         {/* Stats */}
         <View className="mx-5 mb-5 flex-row gap-2">
           {[
-            { num: String(userStats?.total_messages ?? 0), label: t("profile.stats.messages") },
-            { num: String(userStats?.joined_rooms ?? 0), label: t("profile.stats.rooms") },
+            {
+              num: String(userStats?.total_messages ?? 0),
+              label: t("profile.stats.messages"),
+            },
+            {
+              num: String(userStats?.joined_rooms ?? 0),
+              label: t("profile.stats.rooms"),
+            },
             { num: String(friendsCount), label: t("profile.stats.friends") },
             { num: "0", label: t("profile.stats.reactions") },
           ].map((stat) => (
@@ -566,7 +766,9 @@ export default function ProfileScreen() {
             toggleOn={userSettings?.message?.read_receipt ?? true}
             onToggle={(val) => {
               if (userSettings) {
-                updateSettings({ message: { ...userSettings.message, read_receipt: val } } as any);
+                updateSettings({
+                  message: { ...userSettings.message, read_receipt: val },
+                } as any);
               }
             }}
           />
@@ -615,7 +817,9 @@ export default function ProfileScreen() {
             </View>
             <View className="rounded-md bg-mint-light px-2 py-0.5">
               <Text className="text-[9px] font-sans-semibold text-mint-text">
-                {devices && devices.length > 0 ? `${devices.length} active` : t("profile.security.badgeSafe")}
+                {devices && devices.length > 0
+                  ? `${devices.length} active`
+                  : t("profile.security.badgeSafe")}
               </Text>
             </View>
           </View>
@@ -623,10 +827,19 @@ export default function ProfileScreen() {
             <Pressable
               key={device.id}
               onPress={() => {
-                const actions: { text: string; style?: "default" | "cancel" | "destructive"; onPress?: () => void }[] = [
+                const actions: {
+                  text: string;
+                  style?: "default" | "cancel" | "destructive";
+                  onPress?: () => void;
+                }[] = [
                   {
-                    text: device.is_blocked ? t("profile.security.unblock") : t("profile.security.block"),
-                    onPress: () => (device.is_blocked ? unblockDevice(device.id) : blockDevice(device.id)),
+                    text: device.is_blocked
+                      ? t("profile.security.unblock")
+                      : t("profile.security.block"),
+                    onPress: () =>
+                      device.is_blocked
+                        ? unblockDevice(device.id)
+                        : blockDevice(device.id),
                   },
                   {
                     text: t("profile.security.terminate"),
@@ -635,25 +848,39 @@ export default function ProfileScreen() {
                   },
                   { text: t("common.cancel"), style: "cancel" },
                 ];
-                Alert.alert(device.device_name ?? t("common.unknown"), t("profile.security.deviceActions"), actions);
+                Alert.alert(
+                  device.device_name ?? t("common.unknown"),
+                  t("profile.security.deviceActions"),
+                  actions,
+                );
               }}
               className="flex-row items-center gap-2.5 border-t border-border-soft pt-2.5 mt-2.5 first:mt-0 active:opacity-70"
             >
               <View className="h-7 w-7 items-center justify-center rounded-lg bg-surface-alt">
                 <Ionicons
-                  name={device.device_type === "mobile" ? "phone-portrait-outline" : "laptop-outline"}
+                  name={
+                    device.device_type === "mobile"
+                      ? "phone-portrait-outline"
+                      : "laptop-outline"
+                  }
                   size={14}
                   color={colors.ink3}
                 />
               </View>
               <View className="flex-1">
-                <Text className="text-[12px] font-sans-medium text-ink">{device.device_name ?? "Unknown"}</Text>
+                <Text className="text-[12px] font-sans-medium text-ink">
+                  {device.device_name ?? "Unknown"}
+                </Text>
                 <Text className="text-[10px] text-ink-4">
-                  {device.is_current ? t("profile.security.current") : device.location ?? ""}
+                  {device.is_current
+                    ? t("profile.security.current")
+                    : (device.location ?? "")}
                   {device.is_blocked ? ` · ${t("profile.security.blocked")}` : ""}
                 </Text>
               </View>
-              <View className={`h-2 w-2 rounded-full ${device.is_blocked ? "bg-rose" : device.is_current ? "bg-mint" : "bg-ink-4/40"}`} />
+              <View
+                className={`h-2 w-2 rounded-full ${device.is_blocked ? "bg-rose" : device.is_current ? "bg-mint" : "bg-ink-4/40"}`}
+              />
             </Pressable>
           ))}
         </View>
@@ -690,7 +917,7 @@ export default function ProfileScreen() {
               router.replace("/(auth)" as Href);
             }}
           />
-        </SettingsSection> 
+        </SettingsSection>
 
         <View className="h-8" />
       </ScrollView>
@@ -733,10 +960,20 @@ export default function ProfileScreen() {
       />
 
       {/* Password Change Modal */}
-      <Modal visible={pwModalVisible} transparent animationType="fade" onRequestClose={() => setPwModalVisible(false)}>
-        <Pressable className="flex-1 justify-center bg-black/40 px-6" onPress={() => setPwModalVisible(false)}>
+      <Modal
+        visible={pwModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPwModalVisible(false)}
+      >
+        <Pressable
+          className="flex-1 justify-center bg-black/40 px-6"
+          onPress={() => setPwModalVisible(false)}
+        >
           <Pressable onPress={() => {}} className="rounded-2xl bg-surface p-6">
-            <Text className="mb-4 text-center text-[17px] font-display-bold text-ink">{t("common.changePassword")}</Text>
+            <Text className="mb-4 text-center text-[17px] font-display-bold text-ink">
+              {t("common.changePassword")}
+            </Text>
             <TextInput
               value={oldPw}
               onChangeText={setOldPw}
@@ -754,8 +991,13 @@ export default function ProfileScreen() {
               className="mb-4 rounded-xl border border-border-soft px-4 py-3 text-[14px] text-ink"
             />
             <View className="flex-row gap-3">
-              <Pressable onPress={() => setPwModalVisible(false)} className="flex-1 rounded-xl border border-border-soft py-3">
-                <Text className="text-center text-[13px] font-sans-semibold text-ink-3">{t("common.cancel")}</Text>
+              <Pressable
+                onPress={() => setPwModalVisible(false)}
+                className="flex-1 rounded-xl border border-border-soft py-3"
+              >
+                <Text className="text-center text-[13px] font-sans-semibold text-ink-3">
+                  {t("common.cancel")}
+                </Text>
               </Pressable>
               <Pressable
                 onPress={handleChangePassword}
@@ -765,7 +1007,9 @@ export default function ProfileScreen() {
                 {changingPassword ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Text className="text-center text-[13px] font-sans-semibold text-white">{t("common.save")}</Text>
+                  <Text className="text-center text-[13px] font-sans-semibold text-white">
+                    {t("common.save")}
+                  </Text>
                 )}
               </Pressable>
             </View>
@@ -774,37 +1018,61 @@ export default function ProfileScreen() {
       </Modal>
 
       {/* Login History Modal */}
-      <Modal visible={loginHistoryVisible} transparent animationType="slide" onRequestClose={() => setLoginHistoryVisible(false)}>
+      <Modal
+        visible={loginHistoryVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLoginHistoryVisible(false)}
+      >
         <View className="flex-1 justify-end bg-black/40">
           <Pressable onPress={() => setLoginHistoryVisible(false)} className="flex-1" />
           <View className="max-h-[60%] rounded-t-3xl bg-cream pb-6">
-            <Pressable onPress={() => setLoginHistoryVisible(false)} className="items-center pt-3 pb-2">
+            <Pressable
+              onPress={() => setLoginHistoryVisible(false)}
+              className="items-center pt-3 pb-2"
+            >
               <View className="h-1 w-10 rounded-full bg-ink-4/40" />
             </Pressable>
-            <Text className="mb-3 text-center text-[17px] font-display-bold text-ink">{t("common.loginHistory")}</Text>
+            <Text className="mb-3 text-center text-[17px] font-display-bold text-ink">
+              {t("common.loginHistory")}
+            </Text>
             <ScrollView className="px-5">
               {((loginHistoryData as any)?.data ?? []).length === 0 ? (
-                <Text className="py-8 text-center text-[13px] text-ink-3">{t("profile.security.noLoginHistory")}</Text>
+                <Text className="py-8 text-center text-[13px] text-ink-3">
+                  {t("profile.security.noLoginHistory")}
+                </Text>
               ) : (
                 ((loginHistoryData as any)?.data ?? []).map((entry: any) => {
                   const matchingDevice = (devices ?? []).find(
-                    (d: any) => d.device_name === entry.device_name && d.device_type === entry.device_type,
+                    (d: any) =>
+                      d.device_name === entry.device_name &&
+                      d.device_type === entry.device_type,
                   );
                   return (
                     <Pressable
                       key={entry.id}
                       onPress={() => {
-                        const actions: { text: string; style?: "default" | "cancel" | "destructive"; onPress?: () => void }[] = [];
+                        const actions: {
+                          text: string;
+                          style?: "default" | "cancel" | "destructive";
+                          onPress?: () => void;
+                        }[] = [];
                         if (matchingDevice) {
                           actions.push({
-                            text: matchingDevice.is_blocked ? t("profile.security.unblock") : t("profile.security.block"),
+                            text: matchingDevice.is_blocked
+                              ? t("profile.security.unblock")
+                              : t("profile.security.block"),
                             onPress: () =>
-                              matchingDevice.is_blocked ? unblockDevice(matchingDevice.id) : blockDevice(matchingDevice.id),
+                              matchingDevice.is_blocked
+                                ? unblockDevice(matchingDevice.id)
+                                : blockDevice(matchingDevice.id),
                           });
                         }
                         actions.push({ text: t("common.close"), style: "cancel" });
                         Alert.alert(
-                          entry.is_suspicious ? t("profile.security.suspiciousLogin") : t("profile.security.loginDetail"),
+                          entry.is_suspicious
+                            ? t("profile.security.suspiciousLogin")
+                            : t("profile.security.loginDetail"),
                           `${entry.device_name ?? t("common.unknown")}\n${entry.ip_address}${entry.location ? ` · ${entry.location}` : ""}\n${new Date(entry.created_at).toLocaleString()}`,
                           actions,
                         );
@@ -814,19 +1082,38 @@ export default function ProfileScreen() {
                       <View
                         className="h-8 w-8 items-center justify-center rounded-xl"
                         style={{
-                          backgroundColor: entry.is_suspicious ? colors.roseLight : entry.login_status === "success" ? colors.mintLight : colors.peachLight,
+                          backgroundColor: entry.is_suspicious
+                            ? colors.roseLight
+                            : entry.login_status === "success"
+                              ? colors.mintLight
+                              : colors.peachLight,
                         }}
                       >
                         <Ionicons
-                          name={entry.is_suspicious ? "warning-outline" : entry.login_status === "success" ? "checkmark" : "close"}
+                          name={
+                            entry.is_suspicious
+                              ? "warning-outline"
+                              : entry.login_status === "success"
+                                ? "checkmark"
+                                : "close"
+                          }
                           size={14}
-                          style={{ color: entry.is_suspicious ? colors.roseText : entry.login_status === "success" ? colors.mintText : colors.peachText }}
+                          style={{
+                            color: entry.is_suspicious
+                              ? colors.roseText
+                              : entry.login_status === "success"
+                                ? colors.mintText
+                                : colors.peachText,
+                          }}
                         />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-[12px] font-sans-semibold text-ink">{entry.device_name ?? t("common.unknown")}</Text>
+                        <Text className="text-[12px] font-sans-semibold text-ink">
+                          {entry.device_name ?? t("common.unknown")}
+                        </Text>
                         <Text className="text-[10px] text-ink-4">
-                          {entry.ip_address}{entry.location ? ` · ${entry.location}` : ""}
+                          {entry.ip_address}
+                          {entry.location ? ` · ${entry.location}` : ""}
                         </Text>
                         <Text className="text-[10px] text-ink-4">
                           {new Date(entry.created_at).toLocaleString()}
@@ -834,7 +1121,9 @@ export default function ProfileScreen() {
                       </View>
                       {entry.is_suspicious && (
                         <View className="rounded-md bg-rose-light px-2 py-0.5">
-                          <Text className="text-[9px] font-sans-semibold text-rose-text">{t("profile.security.suspicious")}</Text>
+                          <Text className="text-[9px] font-sans-semibold text-rose-text">
+                            {t("profile.security.suspicious")}
+                          </Text>
                         </View>
                       )}
                     </Pressable>

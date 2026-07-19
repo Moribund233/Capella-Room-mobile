@@ -9,6 +9,13 @@ import { messageKeys } from "../hooks/useMessagesQuery";
 import { roomKeys } from "../hooks/useRoomsQuery";
 import { userKeys } from "../hooks/useUsersQuery";
 import { notifKeys } from "../hooks/useNotificationsQuery";
+import {
+  syncMessages,
+  updateLocalMessage,
+  markLocalMessageDeleted,
+  updateLocalRoom,
+  upsertUsers,
+} from "../db/sync";
 import type { MessagesResponse, Message } from "../api/messages";
 import type { ReconnectResultPayload } from "./types";
 
@@ -66,9 +73,12 @@ function requestMissedMessages(roomId: string) {
   const data = queryClient.getQueryData<InfiniteData<MessagesResponse>>(keys);
   const lastMessageId =
     data && data.pages.length > 0
-      ? data.pages[0].messages[data.pages[0].messages.length - 1]?.id ?? null
+      ? (data.pages[0].messages[data.pages[0].messages.length - 1]?.id ?? null)
       : null;
-  getWsClient().send("GetMissedMessages", { room_id: roomId, last_message_id: lastMessageId });
+  getWsClient().send("GetMissedMessages", {
+    room_id: roomId,
+    last_message_id: lastMessageId,
+  });
 }
 
 /* ─── Auto-connect on login, disconnect on logout ─────── */
@@ -102,7 +112,7 @@ export function useWsEventHandlers() {
     const ws = getWsClient();
     const unsubscribers: (() => void)[] = [];
 
-    /* ── New message → React Query cache ── */
+    /* ── New message → React Query cache + local DB ── */
     unsubscribers.push(
       ws.on("NewMessage", (payload: any) => {
         const msg: Message = {
@@ -122,10 +132,22 @@ export function useWsEventHandlers() {
           created_at: payload.created_at,
         };
         appendMessageToCache(payload.room_id, msg);
+        syncMessages(payload.room_id, [msg]).catch((err) => {
+          console.warn("[WS] Failed to sync new message to local DB:", err);
+        });
+        upsertUsers([
+          {
+            id: payload.sender_id,
+            username: payload.sender_name,
+            avatar_url: null,
+          },
+        ]).catch((err) => {
+          console.warn("[WS] Failed to sync sender to local DB:", err);
+        });
       }),
     );
 
-    /* ── Message edited → React Query cache ── */
+    /* ── Message edited → React Query cache + local DB ── */
     unsubscribers.push(
       ws.on("MessageEdited", (payload: any) => {
         updateMessageInCache(payload.room_id, payload.message_id, {
@@ -133,14 +155,26 @@ export function useWsEventHandlers() {
           edited_at: payload.edited_at,
           is_edited: true,
         } as any);
+        updateLocalMessage(payload.room_id, payload.message_id, {
+          content: payload.new_content,
+          edited_at: payload.edited_at,
+          is_edited: true,
+        }).catch((err) => {
+          console.warn("[WS] Failed to update local message:", err);
+        });
       }),
     );
 
-    /* ── Message deleted → React Query cache ── */
+    /* ── Message deleted → React Query cache + local DB ── */
     unsubscribers.push(
       ws.on("MessageDeleted", (payload: any) => {
         // We need the room_id — infer from cache or mark as deleted
         removeMessageFromCache(payload.room_id ?? "", payload.message_id);
+        if (payload.room_id) {
+          markLocalMessageDeleted(payload.room_id, payload.message_id).catch((err) => {
+            console.warn("[WS] Failed to mark local message deleted:", err);
+          });
+        }
       }),
     );
 
@@ -194,13 +228,21 @@ export function useWsEventHandlers() {
       }),
     );
 
-    /* ── Room updated → invalidate room detail + lists ── */
+    /* ── Room updated → invalidate room detail + lists + local DB ── */
     unsubscribers.push(
       ws.on("RoomUpdated", (payload: any) => {
         queryClient.invalidateQueries({ queryKey: roomKeys.all });
         queryClient.invalidateQueries({ queryKey: roomKeys.recent });
         if (payload.room_id) {
           queryClient.invalidateQueries({ queryKey: roomKeys.detail(payload.room_id) });
+          updateLocalRoom(payload.room_id, {
+            name: payload.name,
+            member_count: payload.member_count,
+            unread_count: payload.unread_count,
+            last_message: payload.last_message,
+          }).catch((err) => {
+            console.warn("[WS] Failed to update local room:", err);
+          });
         }
       }),
     );

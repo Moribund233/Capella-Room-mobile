@@ -19,11 +19,13 @@ import {
 import { Caveat_400Regular } from "@expo-google-fonts/caveat";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { DatabaseProvider } from "@nozbe/watermelondb/DatabaseProvider";
 import { useAuthStore } from "@/lib/store/auth";
 import { useThemeStore } from "@/lib/store/theme";
 import { useLanguageStore } from "@/lib/store/language";
 import { useWsConnection, useWsEventHandlers } from "@/lib/ws/hooks";
 import { queryClient } from "@/lib/hooks/queryClient";
+import { database } from "@/lib/db/database";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
@@ -67,17 +69,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <NotificationProvider>
-            <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-          </NotificationProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
+      <DatabaseProvider database={database}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <NotificationProvider>
+              <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+              </Stack>
+            </NotificationProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </DatabaseProvider>
     </SafeAreaProvider>
   );
 }

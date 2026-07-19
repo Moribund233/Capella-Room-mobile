@@ -2,17 +2,26 @@
  * Generic button with primary / secondary / outline variants.
  */
 
-import { Pressable, Text, ActivityIndicator, type PressableProps } from "react-native";
+import { Text, ActivityIndicator, type PressableProps } from "react-native";
+
+import { ScalePress } from "./animations/ScalePress";
 
 type ButtonVariant = "primary" | "secondary" | "outline";
 
-interface ButtonProps extends PressableProps {
+interface ButtonProps extends Omit<
+  PressableProps,
+  "onPress" | "onLongPress" | "onPressIn" | "onPressOut" | "style"
+> {
   /** Button label. */
   title: string;
   /** Visual variant. */
   variant?: ButtonVariant;
   /** Show a loading spinner and disable interactions. */
   loading?: boolean;
+  /** Called when the user presses the button. */
+  onPress?: () => void;
+  /** Called when the user long-presses the button. */
+  onLongPress?: () => void;
 }
 
 /**
@@ -26,12 +35,13 @@ export function Button({
   variant = "primary",
   loading = false,
   disabled,
+  onPress,
+  onLongPress,
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
-  const baseClasses =
-    "w-full items-center justify-center rounded-2xl py-4 active:scale-97";
+  const baseClasses = "w-full items-center justify-center rounded-2xl py-4";
   const variantClasses = {
     primary: "bg-purple shadow-lg",
     secondary: "bg-purple-light",
@@ -44,9 +54,11 @@ export function Button({
   };
 
   return (
-    <Pressable
+    <ScalePress
       disabled={isDisabled}
       className={`${baseClasses} ${variantClasses[variant]} ${isDisabled ? "opacity-60" : ""}`}
+      onPress={onPress}
+      onLongPress={onLongPress}
       {...rest}
     >
       {loading ? (
@@ -56,6 +68,6 @@ export function Button({
           {title}
         </Text>
       )}
-    </Pressable>
+    </ScalePress>
   );
 }

@@ -2,7 +2,14 @@
  * Modal displaying the edit history of a message.
  */
 
-import { Modal, View, Text, Pressable, ActivityIndicator, ScrollView } from "react-native";
+import {
+  Modal,
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { useThemeColors } from "@/lib/hooks/useThemeColors";
@@ -42,7 +49,9 @@ export function EditHistoryModal({ messageId, visible, onClose }: EditHistoryMod
           <View className="h-1 w-10 rounded-full bg-ink-4/30" />
         </View>
         <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-[16px] font-display-bold text-ink">{t("chat.editHistoryTitle")}</Text>
+          <Text className="text-[16px] font-display-bold text-ink">
+            {t("chat.editHistoryTitle")}
+          </Text>
           <Pressable onPress={onClose}>
             <Ionicons name="close" size={22} color={colors.ink2} />
           </Pressable>
@@ -53,7 +62,9 @@ export function EditHistoryModal({ messageId, visible, onClose }: EditHistoryMod
             <ActivityIndicator color={colors.purple} />
           </View>
         ) : !history || history.length === 0 ? (
-          <Text className="py-6 text-center text-[13px] text-ink-3">{t("chat.noEditHistory")}</Text>
+          <Text className="py-6 text-center text-[13px] text-ink-3">
+            {t("chat.noEditHistory")}
+          </Text>
         ) : (
           <ScrollView className="max-h-[50%]">
             {history.map((entry, index) => {
@@ -72,7 +83,9 @@ export function EditHistoryModal({ messageId, visible, onClose }: EditHistoryMod
                       {isLatest ? ` · ${t("chat.latestEdit")}` : ""}
                     </Text>
                   </View>
-                  <Text className="mb-1 text-[12px] text-ink-4 line-through">{entry.old_content}</Text>
+                  <Text className="mb-1 text-[12px] text-ink-4 line-through">
+                    {entry.old_content}
+                  </Text>
                   <Text className="text-[13px] text-ink">{entry.new_content}</Text>
                 </View>
               );

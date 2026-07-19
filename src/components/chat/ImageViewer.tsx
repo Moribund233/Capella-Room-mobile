@@ -28,7 +28,10 @@ export function ImageViewer({ uri, visible, onClose }: ImageViewerProps) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 bg-black/90">
-        <Pressable onPress={onClose} className="absolute right-4 top-12 z-10 h-10 w-10 items-center justify-center rounded-full bg-black/40">
+        <Pressable
+          onPress={onClose}
+          className="absolute right-4 top-12 z-10 h-10 w-10 items-center justify-center rounded-full bg-black/40"
+        >
           <Ionicons name="close" size={24} color="white" />
         </Pressable>
         <View className="flex-1 items-center justify-center">

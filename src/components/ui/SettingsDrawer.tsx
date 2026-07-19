@@ -1,8 +1,10 @@
-import { useEffect, useMemo } from "react";
-import { Modal, View, Text, Pressable, ScrollView, Switch, Animated, Dimensions } from "react-native";
+import { useMemo } from "react";
+import { View, Text, ScrollView, Switch, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useThemeColors } from "@/lib/hooks/useThemeColors";
+import { SlideUpModal } from "@/components/ui/animations/SlideUpModal";
+import { ScalePress } from "@/components/ui/animations/ScalePress";
 
 interface DrawerOption {
   label: string;
@@ -22,87 +24,78 @@ interface SettingsDrawerProps {
   onClose: () => void;
 }
 
-export function SettingsDrawer({ visible, title, options, onClose }: SettingsDrawerProps) {
+export function SettingsDrawer({
+  visible,
+  title,
+  options,
+  onClose,
+}: SettingsDrawerProps) {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
-  const slideAnim = useMemo(() => new Animated.Value(0), []);
-
-  useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: visible ? 1 : 0,
-      useNativeDriver: true,
-      damping: 20,
-      stiffness: 200,
-    }).start();
-  }, [visible, slideAnim]);
-
-  const translateY = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [Dimensions.get("window").height, 0],
-  });
+  const maxHeight = useMemo(() => Dimensions.get("window").height * 0.5, []);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
-        <Animated.View
-          style={{ transform: [{ translateY }] }}
-          className="rounded-t-3xl bg-cream pb-4"
-          onStartShouldSetResponder={() => true}
-        >
-          <Pressable onPress={() => {}} className="px-5 pb-2 pt-3">
-            <View className="mx-auto mb-4 h-1 w-10 rounded-full bg-ink-4/40" />
-            <Text className="text-center text-[17px] font-display-bold text-ink">{title}</Text>
-          </Pressable>
+    <SlideUpModal visible={visible} onClose={onClose}>
+      <View className="px-5 pb-2 pt-3">
+        <View className="mx-auto mb-4 h-1 w-10 rounded-full bg-ink-4/40" />
+        <Text className="text-center text-[17px] font-display-bold text-ink">
+          {title}
+        </Text>
+      </View>
 
-          <View style={{ maxHeight: Dimensions.get("window").height * 0.5 }}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 8 }}
+      <View style={{ maxHeight }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: insets.bottom + 8,
+          }}
+        >
+          {options.map((opt, i) => (
+            <ScalePress
+              key={i}
+              onPress={() => {
+                if (!opt.toggle) {
+                  opt.onPress();
+                  onClose();
+                }
+              }}
+              disabled={false}
+              className="flex-row items-center gap-3 border-b border-border-soft px-1 py-4"
             >
-              {options.map((opt, i) => (
-                <Pressable
-                  key={i}
-                  onPress={() => {
-                    if (!opt.toggle) {
-                      opt.onPress();
-                      onClose();
-                    } else {
-                      opt.onPress();
-                    }
-                  }}
-                  className="flex-row items-center gap-3 border-b border-border-soft px-1 py-4 active:opacity-60"
+              {opt.icon && (
+                <View className="h-8 w-8 items-center justify-center rounded-xl bg-surface-alt">
+                  <Ionicons
+                    name={opt.icon as any}
+                    size={16}
+                    color={opt.destructive ? "#E8788A" : "#475569"}
+                  />
+                </View>
+              )}
+              <View className="flex-1">
+                <Text
+                  className={`text-[15px] font-sans-medium ${opt.destructive ? "text-rose" : "text-ink"}`}
                 >
-                  {opt.icon && (
-                    <View className="h-8 w-8 items-center justify-center rounded-xl bg-surface-alt">
-                      <Ionicons name={opt.icon as any} size={16} color={opt.destructive ? "#E8788A" : "#475569"} />
-                    </View>
-                  )}
-                  <View className="flex-1">
-                    <Text
-                      className={`text-[15px] font-sans-medium ${opt.destructive ? "text-rose" : "text-ink"}`}
-                    >
-                      {opt.label}
-                    </Text>
-                  </View>
-                  {opt.toggle ? (
-                    <Switch
-                      value={opt.toggleValue}
-                      onValueChange={() => opt.onPress()}
-                      trackColor={{ false: colors.border, true: colors.purple }}
-                      thumbColor="white"
-                      style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
-                    />
-                  ) : opt.value ? (
-                    <Text className="text-[13px] text-ink-3">{opt.value}</Text>
-                  ) : (
-                    <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
-                  )}
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </Animated.View>
-      </Pressable>
-    </Modal>
+                  {opt.label}
+                </Text>
+              </View>
+              {opt.toggle ? (
+                <Switch
+                  value={opt.toggleValue}
+                  onValueChange={() => opt.onPress()}
+                  trackColor={{ false: colors.border, true: colors.purple }}
+                  thumbColor="white"
+                  style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+                />
+              ) : opt.value ? (
+                <Text className="text-[13px] text-ink-3">{opt.value}</Text>
+              ) : (
+                <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+              )}
+            </ScalePress>
+          ))}
+        </ScrollView>
+      </View>
+    </SlideUpModal>
   );
 }

@@ -51,7 +51,6 @@ export default {
     tagline: "让聊天像家一样自在",
     subtitle: "为社群、团队与好友打造的实时消息空间。快速、美观、私密。",
 
-
     signIn: "登录",
     createAccount: "创建账号",
     email: "邮箱",
@@ -179,6 +178,7 @@ export default {
     voiceMessage: "语音消息",
     voiceTooShort: "录音时间过短",
     openLinkFailed: "无法打开链接",
+    offlineFallback: "离线模式：仅显示已缓存的消息",
   },
 
   // ── Discover ───────────────────────────────────────────────

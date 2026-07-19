@@ -75,11 +75,17 @@ function Row({
           className="h-8 w-8 items-center justify-center rounded-xl"
           style={{ backgroundColor: colors.surfaceAlt }}
         >
-          <Ionicons name={icon} size={16} color={destructive ? colors.rose : colors.ink2} />
+          <Ionicons
+            name={icon}
+            size={16}
+            color={destructive ? colors.rose : colors.ink2}
+          />
         </View>
       )}
       <View className="flex-1">
-        <Text className={`text-[14px] font-sans-medium ${destructive ? "text-rose" : "text-ink"}`}>
+        <Text
+          className={`text-[14px] font-sans-medium ${destructive ? "text-rose" : "text-ink"}`}
+        >
           {label}
         </Text>
       </View>
@@ -103,7 +109,9 @@ export default function RoomManageScreen() {
 
   const { data: room, isLoading: roomLoading } = useRoom(roomId ?? "");
   const { data: members, isLoading: membersLoading } = useRoomMembers(roomId ?? "");
-  const { data: invitations, isLoading: invitationsLoading } = useRoomInvitations(roomId ?? "");
+  const { data: invitations, isLoading: invitationsLoading } = useRoomInvitations(
+    roomId ?? "",
+  );
 
   const { mutate: updateRoom, isPending: updatingRoom } = useUpdateRoom();
   const { mutate: deleteRoom, isPending: deletingRoom } = useDeleteRoom();
@@ -229,10 +237,16 @@ export default function RoomManageScreen() {
     <View className="flex-1 bg-cream" style={{ paddingTop: insets.top }}>
       {/* Header */}
       <View className="flex-row items-center gap-2 border-b border-border-soft px-4 pb-2.5 pt-1">
-        <Pressable onPress={() => router.back()} className="h-8 w-8 items-center justify-center rounded-xl active:bg-surface-alt">
+        <Pressable
+          onPress={() => router.back()}
+          className="h-8 w-8 items-center justify-center rounded-xl active:bg-surface-alt"
+        >
           <Ionicons name="chevron-back" size={22} color={colors.ink} />
         </Pressable>
-        <Text className="flex-1 text-center font-display-bold text-[17px] text-ink" numberOfLines={1}>
+        <Text
+          className="flex-1 text-center font-display-bold text-[17px] text-ink"
+          numberOfLines={1}
+        >
           {t("chat.roomSettings")}
         </Text>
         <View className="h-8 w-8" />
@@ -244,7 +258,11 @@ export default function RoomManageScreen() {
           {!editingInfo ? (
             <>
               <Row label={t("chat.roomName")} value={room.name} />
-              <Row label={t("chat.roomDescription")} value={room.description ?? "-"} last />
+              <Row
+                label={t("chat.roomDescription")}
+                value={room.description ?? "-"}
+                last
+              />
               {canManage && (
                 <Pressable
                   onPress={startEdit}
@@ -258,13 +276,17 @@ export default function RoomManageScreen() {
             </>
           ) : (
             <View className="p-4">
-              <Text className="mb-1.5 text-[12px] font-sans-semibold text-ink">{t("chat.roomName")}</Text>
+              <Text className="mb-1.5 text-[12px] font-sans-semibold text-ink">
+                {t("chat.roomName")}
+              </Text>
               <TextInput
                 value={editName}
                 onChangeText={setEditName}
                 className="rounded-xl border border-border-soft bg-cream px-3 py-2 text-[14px] text-ink"
               />
-              <Text className="mb-1.5 mt-3 text-[12px] font-sans-semibold text-ink">{t("chat.roomDescription")}</Text>
+              <Text className="mb-1.5 mt-3 text-[12px] font-sans-semibold text-ink">
+                {t("chat.roomDescription")}
+              </Text>
               <TextInput
                 value={editDescription}
                 onChangeText={setEditDescription}
@@ -280,7 +302,9 @@ export default function RoomManageScreen() {
                   onPress={() => setEditingInfo(false)}
                   className="flex-1 rounded-xl border border-border-soft py-2.5 active:bg-surface-alt"
                 >
-                  <Text className="text-center text-[13px] font-sans-semibold text-ink">{t("common.cancel")}</Text>
+                  <Text className="text-center text-[13px] font-sans-semibold text-ink">
+                    {t("common.cancel")}
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={saveRoomInfo}
@@ -290,7 +314,9 @@ export default function RoomManageScreen() {
                   {updatingRoom ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
-                    <Text className="text-center text-[13px] font-sans-semibold text-white">{t("common.save")}</Text>
+                    <Text className="text-center text-[13px] font-sans-semibold text-white">
+                      {t("common.save")}
+                    </Text>
                   )}
                 </Pressable>
               </View>
@@ -305,7 +331,9 @@ export default function RoomManageScreen() {
               <ActivityIndicator size="small" color={colors.purple} />
             </View>
           ) : (members ?? []).length === 0 ? (
-            <Text className="py-6 text-center text-[13px] text-ink-3">{t("chat.noMembers")}</Text>
+            <Text className="py-6 text-center text-[13px] text-ink-3">
+              {t("chat.noMembers")}
+            </Text>
           ) : (
             (members ?? []).map((member, index) => {
               const isMe = member.user_id === currentUserId;
@@ -319,7 +347,10 @@ export default function RoomManageScreen() {
                     className="h-9 w-9 items-center justify-center overflow-hidden rounded-xl"
                     style={{ backgroundColor: colors.purpleLight }}
                   >
-                    <Text className="text-[13px] font-sans-semibold" style={{ color: colors.purple }}>
+                    <Text
+                      className="text-[13px] font-sans-semibold"
+                      style={{ color: colors.purple }}
+                    >
                       {member.username?.slice(0, 2).toUpperCase() ?? "?"}
                     </Text>
                   </View>
@@ -327,7 +358,9 @@ export default function RoomManageScreen() {
                     <Text className="text-[13px] font-sans-semibold text-ink">
                       {member.username} {isMe ? `(${t("chat.you")})` : ""}
                     </Text>
-                    <Text className="text-[10px] text-ink-4 capitalize">{member.role}</Text>
+                    <Text className="text-[10px] text-ink-4 capitalize">
+                      {member.role}
+                    </Text>
                   </View>
                   {canModify && (
                     <View className="flex-row gap-1">
@@ -337,7 +370,9 @@ export default function RoomManageScreen() {
                           disabled={settingRole}
                           className="rounded-lg bg-purple-light px-2 py-1"
                         >
-                          <Text className="text-[10px] font-sans-semibold text-purple">{t("chat.setAdmin")}</Text>
+                          <Text className="text-[10px] font-sans-semibold text-purple">
+                            {t("chat.setAdmin")}
+                          </Text>
                         </Pressable>
                       ) : member.role === "admin" ? (
                         <Pressable
@@ -345,7 +380,9 @@ export default function RoomManageScreen() {
                           disabled={settingRole}
                           className="rounded-lg bg-surface-alt px-2 py-1"
                         >
-                          <Text className="text-[10px] font-sans-semibold text-ink-3">{t("chat.setMember")}</Text>
+                          <Text className="text-[10px] font-sans-semibold text-ink-3">
+                            {t("chat.setMember")}
+                          </Text>
                         </Pressable>
                       ) : null}
                       <Pressable
@@ -353,7 +390,9 @@ export default function RoomManageScreen() {
                         disabled={kicking}
                         className="rounded-lg bg-rose-light px-2 py-1"
                       >
-                        <Text className="text-[10px] font-sans-semibold text-rose">{t("chat.kick")}</Text>
+                        <Text className="text-[10px] font-sans-semibold text-rose">
+                          {t("chat.kick")}
+                        </Text>
                       </Pressable>
                     </View>
                   )}
@@ -373,7 +412,9 @@ export default function RoomManageScreen() {
               <View className="h-8 w-8 items-center justify-center rounded-xl bg-purple-light">
                 <Ionicons name="add" size={18} color={colors.purple} />
               </View>
-              <Text className="flex-1 text-[14px] font-sans-medium text-ink">{t("chat.createInvitation")}</Text>
+              <Text className="flex-1 text-[14px] font-sans-medium text-ink">
+                {t("chat.createInvitation")}
+              </Text>
               <Ionicons name="chevron-forward" size={16} color={colors.ink4} />
             </Pressable>
             {invitationsLoading ? (
@@ -381,7 +422,9 @@ export default function RoomManageScreen() {
                 <ActivityIndicator size="small" color={colors.purple} />
               </View>
             ) : (invitations ?? []).length === 0 ? (
-              <Text className="py-4 text-center text-[12px] text-ink-3">{t("chat.noInvitations")}</Text>
+              <Text className="py-4 text-center text-[12px] text-ink-3">
+                {t("chat.noInvitations")}
+              </Text>
             ) : (
               (invitations ?? []).map((invite, index) => (
                 <View
@@ -393,7 +436,8 @@ export default function RoomManageScreen() {
                       {invite.invite_code}
                     </Text>
                     <Text className="text-[10px] text-ink-4">
-                      {invite.used_count} / {invite.max_uses ?? "∞"} {t("chat.used")} · {invite.is_active ? t("chat.active") : t("chat.inactive")}
+                      {invite.used_count} / {invite.max_uses ?? "∞"} {t("chat.used")} ·{" "}
+                      {invite.is_active ? t("chat.active") : t("chat.inactive")}
                     </Text>
                   </View>
                   <Pressable
@@ -403,11 +447,15 @@ export default function RoomManageScreen() {
                     <Ionicons name="copy-outline" size={14} color={colors.purple} />
                   </Pressable>
                   <Pressable
-                    onPress={() => deleteInvitation({ roomId: roomId ?? "", invitationId: invite.id })}
+                    onPress={() =>
+                      deleteInvitation({ roomId: roomId ?? "", invitationId: invite.id })
+                    }
                     disabled={deletingInvite}
                     className="rounded-lg bg-rose-light px-2 py-1"
                   >
-                    <Text className="text-[10px] font-sans-semibold text-rose">{t("common.delete")}</Text>
+                    <Text className="text-[10px] font-sans-semibold text-rose">
+                      {t("common.delete")}
+                    </Text>
                   </Pressable>
                 </View>
               ))
@@ -442,8 +490,12 @@ export default function RoomManageScreen() {
       {inviteModalVisible && (
         <View className="absolute inset-0 items-center justify-center bg-black/40 px-6">
           <View className="w-full rounded-2xl bg-surface p-4">
-            <Text className="mb-3 text-[16px] font-sans-semibold text-ink">{t("chat.createInvitation")}</Text>
-            <Text className="mb-1.5 text-[12px] font-sans-semibold text-ink">{t("chat.expiresInHours")}</Text>
+            <Text className="mb-3 text-[16px] font-sans-semibold text-ink">
+              {t("chat.createInvitation")}
+            </Text>
+            <Text className="mb-1.5 text-[12px] font-sans-semibold text-ink">
+              {t("chat.expiresInHours")}
+            </Text>
             <TextInput
               value={inviteExpires}
               onChangeText={setInviteExpires}
@@ -452,7 +504,9 @@ export default function RoomManageScreen() {
               placeholderTextColor={colors.ink4}
               className="rounded-xl border border-border-soft bg-cream px-3 py-2 text-[14px] text-ink"
             />
-            <Text className="mb-1.5 mt-3 text-[12px] font-sans-semibold text-ink">{t("chat.maxUses")}</Text>
+            <Text className="mb-1.5 mt-3 text-[12px] font-sans-semibold text-ink">
+              {t("chat.maxUses")}
+            </Text>
             <TextInput
               value={inviteMaxUses}
               onChangeText={setInviteMaxUses}
@@ -470,7 +524,9 @@ export default function RoomManageScreen() {
                 }}
                 className="flex-1 rounded-xl border border-border-soft py-2.5 active:bg-surface-alt"
               >
-                <Text className="text-center text-[13px] font-sans-semibold text-ink">{t("common.cancel")}</Text>
+                <Text className="text-center text-[13px] font-sans-semibold text-ink">
+                  {t("common.cancel")}
+                </Text>
               </Pressable>
               <Pressable
                 onPress={handleCreateInvite}
@@ -480,7 +536,9 @@ export default function RoomManageScreen() {
                 {creatingInvite ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Text className="text-center text-[13px] font-sans-semibold text-white">{t("common.create")}</Text>
+                  <Text className="text-center text-[13px] font-sans-semibold text-white">
+                    {t("common.create")}
+                  </Text>
                 )}
               </Pressable>
             </View>

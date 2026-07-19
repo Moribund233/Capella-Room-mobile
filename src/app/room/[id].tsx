@@ -36,6 +36,7 @@ import {
 import { useWsJoinRoom } from "@/lib/ws/hooks";
 import { getWsClient } from "@/lib/ws/client";
 import type { NewMessagePayload } from "@/lib/ws/types";
+import { useLocalMessages, useMessagesSync } from "@/lib/db/hooks";
 import { useAuthStore } from "@/lib/store/auth";
 import { formatMessageTime } from "@/lib/utils/date";
 import * as ImagePicker from "expo-image-picker";
@@ -44,7 +45,10 @@ import { Image } from "expo-image";
 import { uploadImage, uploadFile } from "@/lib/api/files";
 import { downloadAndOpenFile } from "@/lib/utils/files";
 import { EmojiPicker } from "@/components/chat/EmojiPicker";
-import { MessageActionsSheet, type MessageAction } from "@/components/chat/MessageActionsSheet";
+import {
+  MessageActionsSheet,
+  type MessageAction,
+} from "@/components/chat/MessageActionsSheet";
 import { ImageViewer } from "@/components/chat/ImageViewer";
 import { ForwardModal } from "@/components/chat/ForwardModal";
 import { EditHistoryModal } from "@/components/chat/EditHistoryModal";
@@ -90,7 +94,10 @@ function ChatHeader({
       className="flex-row items-center gap-2.5 border-b border-border-soft px-4 pb-2.5 pt-1"
       style={{ backgroundColor: "rgba(250,247,242,0.92)" }}
     >
-      <Pressable onPress={onBack} className="h-8 w-8 items-center justify-center rounded-xl active:bg-surface-alt">
+      <Pressable
+        onPress={onBack}
+        className="h-8 w-8 items-center justify-center rounded-xl active:bg-surface-alt"
+      >
         <Ionicons name="chevron-back" size={22} color={colors.ink} />
       </Pressable>
       <View
@@ -112,14 +119,20 @@ function ChatHeader({
       </View>
       <View className="flex-row gap-1">
         {onSearch && (
-          <Pressable onPress={onSearch} className="h-[34px] w-[34px] items-center justify-center rounded-xl active:bg-surface-alt">
+          <Pressable
+            onPress={onSearch}
+            className="h-[34px] w-[34px] items-center justify-center rounded-xl active:bg-surface-alt"
+          >
             <Ionicons name="search-outline" size={18} color={colors.ink2} />
           </Pressable>
         )}
         <Pressable className="h-[34px] w-[34px] items-center justify-center rounded-xl active:bg-surface-alt">
           <Ionicons name="call-outline" size={18} color={colors.ink2} />
         </Pressable>
-        <Pressable onPress={onManage} className="h-[34px] w-[34px] items-center justify-center rounded-xl active:bg-surface-alt">
+        <Pressable
+          onPress={onManage}
+          className="h-[34px] w-[34px] items-center justify-center rounded-xl active:bg-surface-alt"
+        >
           <Ionicons name="ellipsis-vertical" size={18} color={colors.ink2} />
         </Pressable>
       </View>
@@ -168,7 +181,11 @@ function LinkifiedText({
           key={`link-${index}`}
           className={className}
           style={[style, { textDecorationLine: "underline" }]}
-          onPress={() => Linking.openURL(url).catch(() => Alert.alert(t("errors.generic"), t("chat.openLinkFailed")))}
+          onPress={() =>
+            Linking.openURL(url).catch(() =>
+              Alert.alert(t("errors.generic"), t("chat.openLinkFailed")),
+            )
+          }
         >
           {url}
         </Text>,
@@ -184,7 +201,11 @@ function LinkifiedText({
       </Text>,
     );
   }
-  return <Text className={className} style={style}>{parts}</Text>;
+  return (
+    <Text className={className} style={style}>
+      {parts}
+    </Text>
+  );
 }
 
 function MessageBubble({
@@ -227,7 +248,10 @@ function MessageBubble({
             className="h-7 w-7 items-center justify-center overflow-hidden rounded-full"
             style={{ backgroundColor: colors.purpleLight }}
           >
-            <Text className="text-[11px] font-sans-semibold" style={{ color: colors.purple }}>
+            <Text
+              className="text-[11px] font-sans-semibold"
+              style={{ color: colors.purple }}
+            >
               {message.sender?.username?.slice(0, 1) ?? "?"}
             </Text>
           </View>
@@ -247,7 +271,10 @@ function MessageBubble({
             backgroundColor: "rgba(123,106,232,0.08)",
           }}
         >
-          <Text className="text-[10px] font-sans-semibold" style={{ color: colors.purple }}>
+          <Text
+            className="text-[10px] font-sans-semibold"
+            style={{ color: colors.purple }}
+          >
             {message.reply_to_message.sender.username}
           </Text>
           <Text className="mt-0.5 text-[11px] text-ink-3" numberOfLines={1}>
@@ -302,7 +329,9 @@ function MessageBubble({
               />
             )}
             {!isDeleted && message.is_edited && (
-              <Text className={`mt-1 text-[9px] text-right ${isOwn ? "text-white/70" : "text-ink-4"}`}>
+              <Text
+                className={`mt-1 text-[9px] text-right ${isOwn ? "text-white/70" : "text-ink-4"}`}
+              >
                 {t("chat.edited")}
               </Text>
             )}
@@ -312,7 +341,9 @@ function MessageBubble({
 
       {/* Read receipt */}
       {isOwn && readBy && readBy.size > 0 && !sendingStatus && (
-        <View className={`mt-0.5 flex-row items-center gap-1 ${isOwn ? "self-end" : "self-start"}`}>
+        <View
+          className={`mt-0.5 flex-row items-center gap-1 ${isOwn ? "self-end" : "self-start"}`}
+        >
           <Ionicons name="checkmark-done" size={10} color={colors.ink4} />
           <Text className="text-[9px] text-ink-4">
             {readBy.size === 1 ? t("chat.read") : `${t("chat.read")} ${readBy.size}`}
@@ -420,7 +451,10 @@ function FileMessage({ message }: { message: Message }) {
   };
 
   return (
-    <Pressable onPress={handleOpen} className="mt-1 max-w-[80%] self-start rounded-xl bg-surface-alt p-2.5 active:opacity-80">
+    <Pressable
+      onPress={handleOpen}
+      className="mt-1 max-w-[80%] self-start rounded-xl bg-surface-alt p-2.5 active:opacity-80"
+    >
       <View className="flex-row items-center gap-2.5">
         <View className="h-9 w-9 items-center justify-center rounded-xl bg-purple-light">
           {opening ? (
@@ -459,7 +493,8 @@ function ChatInput({
   const [uploading, setUploading] = useState(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
-  const { isRecording, durationMillis, startRecording, stopRecording } = useAudioRecorder();
+  const { isRecording, durationMillis, startRecording, stopRecording } =
+    useAudioRecorder();
   const { data: members } = useRoomMembers(roomId);
 
   const mentionMatch = useMemo(() => {
@@ -517,8 +552,14 @@ function ChatInput({
       const formData = new FormData();
       formData.append("file", { uri: localUri, name: filename, type: mimeType } as any);
       const fileInfo =
-        messageType === "image" ? await uploadImage(formData) : await uploadFile(formData);
-      onSend({ content: filename, message_type: messageType, file_url: fileInfo.file_url });
+        messageType === "image"
+          ? await uploadImage(formData)
+          : await uploadFile(formData);
+      onSend({
+        content: filename,
+        message_type: messageType,
+        file_url: fileInfo.file_url,
+      });
     } catch (err: any) {
       Alert.alert(t("chat.uploadFailed"), err?.message ?? t("chat.uploadFailedMessage"));
     } finally {
@@ -534,12 +575,7 @@ function ChatInput({
       return;
     }
     const durationSeconds = Math.ceil(result.durationMillis / 1000);
-    await uploadMedia(
-      result.uri,
-      `voice_${durationSeconds}s.m4a`,
-      "audio/m4a",
-      "audio",
-    );
+    await uploadMedia(result.uri, `voice_${durationSeconds}s.m4a`, "audio/m4a", "audio");
   };
 
   const handlePickImage = async () => {
@@ -551,7 +587,12 @@ function ChatInput({
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
-    await uploadMedia(asset.uri, asset.fileName ?? "photo.jpg", asset.mimeType ?? "image/jpeg", "image");
+    await uploadMedia(
+      asset.uri,
+      asset.fileName ?? "photo.jpg",
+      asset.mimeType ?? "image/jpeg",
+      "image",
+    );
   };
 
   const handleTakePhoto = async () => {
@@ -563,14 +604,24 @@ function ChatInput({
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
-    await uploadMedia(asset.uri, asset.fileName ?? "camera.jpg", asset.mimeType ?? "image/jpeg", "image");
+    await uploadMedia(
+      asset.uri,
+      asset.fileName ?? "camera.jpg",
+      asset.mimeType ?? "image/jpeg",
+      "image",
+    );
   };
 
   const handlePickDocument = async () => {
     const result = await DocumentPicker.getDocumentAsync({ type: "*/*" });
     if (result.canceled || !result.assets || !result.assets[0]) return;
     const asset = result.assets[0];
-    await uploadMedia(asset.uri, asset.name, asset.mimeType ?? "application/octet-stream", "file");
+    await uploadMedia(
+      asset.uri,
+      asset.name,
+      asset.mimeType ?? "application/octet-stream",
+      "file",
+    );
   };
 
   useEffect(() => {
@@ -585,7 +636,10 @@ function ChatInput({
   return (
     <View
       className="border-t border-border-soft px-3 pt-2"
-      style={{ backgroundColor: "rgba(250,247,242,0.95)", paddingBottom: 4 + insets.bottom }}
+      style={{
+        backgroundColor: "rgba(250,247,242,0.95)",
+        paddingBottom: 4 + insets.bottom,
+      }}
     >
       {replyTo && (
         <View className="mb-2 flex-row items-center gap-2 rounded-xl border-l-[3px] border-purple bg-purple-light/30 px-3 py-2">
@@ -597,7 +651,10 @@ function ChatInput({
               {replyTo.content}
             </Text>
           </View>
-          <Pressable onPress={onCancelReply} className="h-6 w-6 items-center justify-center rounded-full active:bg-surface-alt">
+          <Pressable
+            onPress={onCancelReply}
+            className="h-6 w-6 items-center justify-center rounded-full active:bg-surface-alt"
+          >
             <Ionicons name="close" size={16} color={colors.ink3} />
           </Pressable>
         </View>
@@ -614,7 +671,10 @@ function ChatInput({
                 className="h-7 w-7 items-center justify-center rounded-full"
                 style={{ backgroundColor: colors.purpleLight }}
               >
-                <Text className="text-[10px] font-sans-semibold" style={{ color: colors.purple }}>
+                <Text
+                  className="text-[10px] font-sans-semibold"
+                  style={{ color: colors.purple }}
+                >
                   {member.username.slice(0, 1).toUpperCase()}
                 </Text>
               </View>
@@ -626,8 +686,12 @@ function ChatInput({
       {isRecording && (
         <View className="mb-2 flex-row items-center justify-center gap-2 rounded-2xl bg-rose-light px-4 py-2">
           <View className="h-2 w-2 rounded-full bg-rose" />
-          <Text className="text-[13px] font-sans-semibold text-rose">{t("chat.recording")}</Text>
-          <Text className="text-[12px] text-ink-3">{Math.ceil(durationMillis / 1000)}s</Text>
+          <Text className="text-[13px] font-sans-semibold text-rose">
+            {t("chat.recording")}
+          </Text>
+          <Text className="text-[12px] text-ink-3">
+            {Math.ceil(durationMillis / 1000)}s
+          </Text>
         </View>
       )}
       <View className="flex-row items-end gap-2">
@@ -682,7 +746,10 @@ function ChatInput({
           onPressOut={!text.trim() ? handleStopRecording : undefined}
           disabled={uploading}
           className="mb-0.5 h-[38px] w-[38px] items-center justify-center rounded-full"
-          style={{ backgroundColor: text.trim() && !uploading ? colors.purple : colors.surfaceAlt }}
+          style={{
+            backgroundColor:
+              text.trim() && !uploading ? colors.purple : colors.surfaceAlt,
+          }}
         >
           <Ionicons
             name={text.trim() ? "send" : "mic"}
@@ -720,7 +787,11 @@ export default function ChatRoomScreen() {
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const [searchNow, setSearchNow] = useState(() => Date.now());
 
-  const { mutate: searchMessages, data: searchResults, isPending: searching } = useSearchMessages();
+  const {
+    mutate: searchMessages,
+    data: searchResults,
+    isPending: searching,
+  } = useSearchMessages();
   const { mutate: addReaction } = useAddReaction(roomId ?? "");
   const { mutate: removeReaction } = useRemoveReaction(roomId ?? "");
   const { mutate: editMessageMutate } = useEditMessage(roomId ?? "");
@@ -742,6 +813,11 @@ export default function ChatRoomScreen() {
 
   const flatListRef = useRef<FlatList>(null);
   const allMessages = messagesPages?.pages.flatMap((p) => p.messages) ?? [];
+  const localMessages = useLocalMessages(roomId ?? null);
+  const isOfflineFallback = allMessages.length === 0 && localMessages.length > 0;
+  const displayMessages = isOfflineFallback ? localMessages : allMessages;
+
+  useMessagesSync(roomId ?? null, allMessages);
 
   const filteredSearchResults = useMemo(() => {
     if (!searchResults) return null;
@@ -757,17 +833,19 @@ export default function ChatRoomScreen() {
   }, [searchResults, searchSender, searchDateDays, searchNow]);
 
   useEffect(() => {
-    if (allMessages.length > 0) {
+    if (displayMessages.length > 0) {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 100);
     }
-  }, [allMessages.length]);
+  }, [displayMessages.length]);
 
   useEffect(() => {
     if (!roomId) return;
     const ws = getWsClient();
     const unsubTyping = ws.on("UserTyping", (payload: any) => {
       if (payload.room_id === roomId && payload.user_id !== currentUserId) {
-        setTypingUsers((prev) => (prev.includes(payload.username) ? prev : [...prev, payload.username]));
+        setTypingUsers((prev) =>
+          prev.includes(payload.username) ? prev : [...prev, payload.username],
+        );
       }
     });
     const unsubStopTyping = ws.on("UserStopTyping", (payload: any) => {
@@ -779,7 +857,9 @@ export default function ChatRoomScreen() {
       if (payload.room_id === roomId && payload.user_id !== currentUserId) {
         setReadByMap((prev) => {
           const next = { ...prev };
-          const set = next[payload.message_id] ? new Set(next[payload.message_id]) : new Set<string>();
+          const set = next[payload.message_id]
+            ? new Set(next[payload.message_id])
+            : new Set<string>();
           set.add(payload.user_id);
           next[payload.message_id] = set;
           return next;
@@ -835,7 +915,11 @@ export default function ChatRoomScreen() {
       // Mark as failed if the server does not acknowledge within 8 seconds.
       setTimeout(() => {
         setPendingMessages((prev) =>
-          prev.map((p) => (p.id === pendingId && p.status === "pending" ? { ...p, status: "failed" as const } : p)),
+          prev.map((p) =>
+            p.id === pendingId && p.status === "pending"
+              ? { ...p, status: "failed" as const }
+              : p,
+          ),
         );
       }, 8000);
     },
@@ -888,10 +972,19 @@ export default function ChatRoomScreen() {
     }
     if (isOwn && !isDeleted) {
       actions.push({ key: "edit", label: t("chat.edit"), icon: "pencil-outline" });
-      actions.push({ key: "delete", label: t("chat.delete"), icon: "trash-outline", destructive: true });
+      actions.push({
+        key: "delete",
+        label: t("chat.delete"),
+        icon: "trash-outline",
+        destructive: true,
+      });
     }
     if (activeMessage.is_edited) {
-      actions.push({ key: "history", label: t("chat.viewEditHistory"), icon: "time-outline" });
+      actions.push({
+        key: "history",
+        label: t("chat.viewEditHistory"),
+        icon: "time-outline",
+      });
     }
     const isPinned = pinnedMessages?.some((p) => p.message_id === activeMessage.id);
     actions.push({
@@ -943,7 +1036,14 @@ export default function ChatRoomScreen() {
           break;
       }
     },
-    [activeMessage, deleteMessageMutate, pinMessageMutate, unpinMessageMutate, pinnedMessages, t],
+    [
+      activeMessage,
+      deleteMessageMutate,
+      pinMessageMutate,
+      unpinMessageMutate,
+      pinnedMessages,
+      t,
+    ],
   );
 
   const handleEmojiSelect = useCallback(
@@ -1025,14 +1125,23 @@ export default function ChatRoomScreen() {
             />
             {searching && <ActivityIndicator size="small" color={colors.purple} />}
             {searchQuery.length > 0 && (
-              <Pressable onPress={() => { setSearchQuery(""); setSearchVisible(false); }}>
+              <Pressable
+                onPress={() => {
+                  setSearchQuery("");
+                  setSearchVisible(false);
+                }}
+              >
                 <Ionicons name="close" size={18} color={colors.ink3} />
               </Pressable>
             )}
           </View>
           {searchResults && searchResults.length > 0 && (
             <View className="mb-2 mt-2 flex-row gap-2">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="flex-1"
+              >
                 <Pressable
                   onPress={() => {
                     setSearchDateDays(null);
@@ -1040,7 +1149,11 @@ export default function ChatRoomScreen() {
                   }}
                   className={`mr-2 rounded-full px-3 py-1 ${searchDateDays === null ? "bg-purple" : "bg-surface-alt"}`}
                 >
-                  <Text className={`text-[11px] font-sans-semibold ${searchDateDays === null ? "text-white" : "text-ink-3"}`}>{t("chat.all")}</Text>
+                  <Text
+                    className={`text-[11px] font-sans-semibold ${searchDateDays === null ? "text-white" : "text-ink-3"}`}
+                  >
+                    {t("chat.all")}
+                  </Text>
                 </Pressable>
                 {[1, 7, 30].map((days) => (
                   <Pressable
@@ -1051,7 +1164,9 @@ export default function ChatRoomScreen() {
                     }}
                     className={`mr-2 rounded-full px-3 py-1 ${searchDateDays === days ? "bg-purple" : "bg-surface-alt"}`}
                   >
-                    <Text className={`text-[11px] font-sans-semibold ${searchDateDays === days ? "text-white" : "text-ink-3"}`}>
+                    <Text
+                      className={`text-[11px] font-sans-semibold ${searchDateDays === days ? "text-white" : "text-ink-3"}`}
+                    >
                       {days === 1 ? t("common.today") : t("chat.days", { days })}
                     </Text>
                   </Pressable>
@@ -1067,9 +1182,17 @@ export default function ChatRoomScreen() {
                   onPress={() => setSearchSender(null)}
                   className={`mr-2 rounded-full px-3 py-1 ${searchSender === null ? "bg-purple" : "bg-surface-alt"}`}
                 >
-                  <Text className={`text-[11px] font-sans-semibold ${searchSender === null ? "text-white" : "text-ink-3"}`}>{t("chat.all")}</Text>
+                  <Text
+                    className={`text-[11px] font-sans-semibold ${searchSender === null ? "text-white" : "text-ink-3"}`}
+                  >
+                    {t("chat.all")}
+                  </Text>
                 </Pressable>
-                {Array.from(new Map((searchResults as Message[]).map((m) => [m.sender?.id, m.sender])).entries())
+                {Array.from(
+                  new Map(
+                    (searchResults as Message[]).map((m) => [m.sender?.id, m.sender]),
+                  ).entries(),
+                )
                   .filter(([id]) => id)
                   .map(([id, sender]) => (
                     <Pressable
@@ -1077,7 +1200,9 @@ export default function ChatRoomScreen() {
                       onPress={() => setSearchSender(id === searchSender ? null : id)}
                       className={`mr-2 rounded-full px-3 py-1 ${searchSender === id ? "bg-purple" : "bg-surface-alt"}`}
                     >
-                      <Text className={`text-[11px] font-sans-semibold ${searchSender === id ? "text-white" : "text-ink-3"}`}>
+                      <Text
+                        className={`text-[11px] font-sans-semibold ${searchSender === id ? "text-white" : "text-ink-3"}`}
+                      >
                         {sender?.username}
                       </Text>
                     </Pressable>
@@ -1098,7 +1223,10 @@ export default function ChatRoomScreen() {
                       <Text className="text-[11px] font-sans-semibold text-ink">
                         {msg.sender?.username ?? t("common.unknown")}
                       </Text>
-                      <Text className="text-[12px] leading-[1.3] text-ink-3" numberOfLines={2}>
+                      <Text
+                        className="text-[12px] leading-[1.3] text-ink-3"
+                        numberOfLines={2}
+                      >
                         {msg.content}
                       </Text>
                     </View>
@@ -1107,9 +1235,14 @@ export default function ChatRoomScreen() {
               </ScrollView>
             </View>
           )}
-          {filteredSearchResults && filteredSearchResults.length === 0 && searchQuery.length > 0 && !searching && (
-            <Text className="mt-2 text-center text-[12px] text-ink-4">{t("chat.noSearchResults")}</Text>
-          )}
+          {filteredSearchResults &&
+            filteredSearchResults.length === 0 &&
+            searchQuery.length > 0 &&
+            !searching && (
+              <Text className="mt-2 text-center text-[12px] text-ink-4">
+                {t("chat.noSearchResults")}
+              </Text>
+            )}
         </View>
       )}
 
@@ -1118,10 +1251,19 @@ export default function ChatRoomScreen() {
         <Pressable className="mx-4 mb-2 mt-2 flex-row items-center gap-2 rounded-xl border border-peach-border-soft bg-peach-light px-3 py-2">
           <Ionicons name="pin" size={14} color={colors.amberText} />
           <Text className="flex-1 text-[11px] text-amber-text" numberOfLines={1}>
-            <Text className="font-sans-semibold">{pinnedMessage.sender_name}</Text>
-            : {pinnedMessage.content}
+            <Text className="font-sans-semibold">{pinnedMessage.sender_name}</Text>:{" "}
+            {pinnedMessage.content}
           </Text>
         </Pressable>
+      )}
+
+      {/* Offline fallback indicator */}
+      {isOfflineFallback && (
+        <View className="mx-4 mb-2 mt-2 rounded-xl bg-amber-100 px-3 py-2">
+          <Text className="text-center text-[11px] font-sans-medium text-amber-800">
+            {t("chat.offlineFallback")}
+          </Text>
+        </View>
       )}
 
       {/* Messages */}
@@ -1132,18 +1274,22 @@ export default function ChatRoomScreen() {
       >
         <FlatList
           ref={flatListRef}
-          data={allMessages}
+          data={displayMessages}
           keyExtractor={(item) => item.id}
           renderItem={({ item, index }) => {
             const isOwn = item.sender?.id === currentUserId;
-            const prevMsg = index > 0 ? allMessages[index - 1] : null;
+            const prevMsg = index > 0 ? displayMessages[index - 1] : null;
             const showHeader = !prevMsg || prevMsg.sender?.id !== item.sender?.id;
             const isNewDay =
-              !prevMsg || new Date(item.created_at).toDateString() !== new Date(prevMsg.created_at).toDateString();
+              !prevMsg ||
+              new Date(item.created_at).toDateString() !==
+                new Date(prevMsg.created_at).toDateString();
 
             return (
               <View className="px-4">
-                {isNewDay && <DateDivider date={new Date(item.created_at).toLocaleDateString()} />}
+                {isNewDay && (
+                  <DateDivider date={new Date(item.created_at).toLocaleDateString()} />
+                )}
                 <MessageBubble
                   message={item}
                   isOwn={isOwn}
@@ -1171,7 +1317,11 @@ export default function ChatRoomScreen() {
                 const msg: Message = {
                   id: pending.id,
                   room_id: roomId ?? "",
-                  sender: { id: currentUserId ?? "", username: t("chat.you"), avatar_url: null },
+                  sender: {
+                    id: currentUserId ?? "",
+                    username: t("chat.you"),
+                    avatar_url: null,
+                  },
                   content: pending.content,
                   message_type: pending.message_type,
                   reply_to: pending.reply_to,
@@ -1267,7 +1417,9 @@ export default function ChatRoomScreen() {
       >
         <View className="flex-1 items-center justify-center bg-black/40 px-6">
           <View className="w-full rounded-2xl bg-surface p-4">
-            <Text className="mb-3 text-[16px] font-sans-semibold text-ink">{t("chat.editMessage")}</Text>
+            <Text className="mb-3 text-[16px] font-sans-semibold text-ink">
+              {t("chat.editMessage")}
+            </Text>
             <TextInput
               value={editText}
               onChangeText={setEditText}
@@ -1283,14 +1435,18 @@ export default function ChatRoomScreen() {
                 }}
                 className="rounded-xl bg-surface-alt px-4 py-2.5 active:opacity-80"
               >
-                <Text className="text-[14px] font-sans-semibold text-ink">{t("common.cancel")}</Text>
+                <Text className="text-[14px] font-sans-semibold text-ink">
+                  {t("common.cancel")}
+                </Text>
               </Pressable>
               <Pressable
                 onPress={handleEditSubmit}
                 disabled={!editText.trim()}
                 className="rounded-xl bg-purple px-4 py-2.5 active:opacity-80 disabled:opacity-50"
               >
-                <Text className="text-[14px] font-sans-semibold text-white">{t("common.save")}</Text>
+                <Text className="text-[14px] font-sans-semibold text-white">
+                  {t("common.save")}
+                </Text>
               </Pressable>
             </View>
           </View>
