@@ -1,8 +1,28 @@
 import { create } from "zustand";
 import * as SecureStore from "expo-secure-store";
-import { loginApi, registerApi, refreshApi } from "../api/auth";
+import { Platform } from "react-native";
+import {
+  loginApi,
+  registerApi,
+  refreshApi,
+  sendRegisterCodeApi,
+  v2RegisterApi,
+  sendLoginCodeApi,
+  v2LoginWithCodeApi,
+  v2LoginWithPasswordApi,
+} from "../api/auth";
 import { setAuthGetters } from "@/lib/auth/token";
 import type { User } from "../api/auth";
+
+function getDeviceName(): string {
+  if (Platform.OS === "android") return "Android";
+  if (Platform.OS === "ios") return "iOS";
+  return "Unknown Device";
+}
+
+function getDeviceType(): string {
+  return Platform.OS === "ios" || Platform.OS === "android" ? "mobile" : "unknown";
+}
 
 /* ─── Keys ────────────────────────────────────────────────── */
 
@@ -48,6 +68,11 @@ interface AuthState {
   hydrate: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
+  loginWithCode: (email: string, code: string) => Promise<void>;
+  loginWithPassword: (email: string, password: string) => Promise<void>;
+  registerWithCode: (email: string, code: string, username: string, password: string) => Promise<void>;
+  sendRegisterCode: (email: string) => Promise<{ message: string; code_length: number }>;
+  sendLoginCode: (email: string) => Promise<{ message: string; code_length: number }>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<string | null>;
 }
@@ -83,11 +108,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  /* ── Login ── */
+  /* ── Login (v1, legacy) ── */
   login: async (email: string, password: string) => {
     set({ isLoading: true });
     try {
-      const result = await loginApi(email, password);
+      const result = await loginApi(email, password, getDeviceName(), getDeviceType());
       await Promise.all([
         setItem(ACCESS_TOKEN_KEY, result.access_token),
         setItem(REFRESH_TOKEN_KEY, result.refresh_token),
@@ -105,17 +130,94 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  /* ── Register ── */
+  /* ── Register (v1, legacy, admin-only) ── */
   register: async (username: string, email: string, password: string) => {
     set({ isLoading: true });
     try {
       await registerApi(username, email, password);
       set({ isLoading: false });
-      // Don't log in automatically — user should go to login tab
     } catch (error) {
       set({ isLoading: false });
       throw error;
     }
+  },
+
+  /* ── v2: register with verification code ── */
+  registerWithCode: async (email: string, code: string, username: string, password: string) => {
+    set({ isLoading: true });
+    try {
+      const result = await v2RegisterApi(email, code, username, password);
+      await Promise.all([
+        setItem(ACCESS_TOKEN_KEY, result.access_token),
+        setItem(REFRESH_TOKEN_KEY, result.refresh_token),
+        setItem(USER_KEY, JSON.stringify(result.user)),
+      ]);
+      set({
+        user: result.user,
+        accessToken: result.access_token,
+        refreshToken: result.refresh_token,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  /* ── v2: login with verification code ── */
+  loginWithCode: async (email: string, code: string) => {
+    set({ isLoading: true });
+    try {
+      const result = await v2LoginWithCodeApi(email, code);
+      await Promise.all([
+        setItem(ACCESS_TOKEN_KEY, result.access_token),
+        setItem(REFRESH_TOKEN_KEY, result.refresh_token),
+        setItem(USER_KEY, JSON.stringify(result.user)),
+      ]);
+      set({
+        user: result.user,
+        accessToken: result.access_token,
+        refreshToken: result.refresh_token,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  /* ── v2: login with password ── */
+  loginWithPassword: async (email: string, password: string) => {
+    set({ isLoading: true });
+    try {
+      const result = await v2LoginWithPasswordApi(email, password, getDeviceName(), getDeviceType());
+      await Promise.all([
+        setItem(ACCESS_TOKEN_KEY, result.access_token),
+        setItem(REFRESH_TOKEN_KEY, result.refresh_token),
+        setItem(USER_KEY, JSON.stringify(result.user)),
+      ]);
+      set({
+        user: result.user,
+        accessToken: result.access_token,
+        refreshToken: result.refresh_token,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  /* ── v2: send register code ── */
+  sendRegisterCode: async (email: string) => {
+    const result = await sendRegisterCodeApi(email);
+    return result;
+  },
+
+  /* ── v2: send login code ── */
+  sendLoginCode: async (email: string) => {
+    const result = await sendLoginCodeApi(email);
+    return result;
   },
 
   /* ── Logout ── */

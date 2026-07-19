@@ -1,20 +1,20 @@
 /**
- * Registration form with username, email, password and strength indicator.
+ * Registration form with email verification code flow (v2).
  */
 
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import { View, Alert } from "react-native";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { zodResolver } from "@/lib/utils/zodResolver";
 import { ApiError } from "@/lib/api/client";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { PasswordStrength } from "@/components/ui/PasswordStrength";
 
 const registerSchema = z.object({
   email: z.string().email("Please enter a valid email"),
+  code: z.string().min(4, "Please enter the verification code"),
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")
@@ -29,41 +29,38 @@ const registerSchema = z.object({
     .regex(/[a-z]/, "Password must contain a lowercase letter")
     .regex(/[A-Z]/, "Password must contain an uppercase letter")
     .regex(/[0-9]/, "Password must contain a number"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 interface RegisterFormProps {
-  /** Called with valid form data. Should throw ApiError on failure. */
   onSubmit: (data: RegisterFormData) => Promise<void>;
-  /** Whether the auth store is processing a request. */
+  onSendCode: (email: string) => Promise<{ message: string; code_length: number }>;
   isLoading: boolean;
 }
 
-/**
- * Render the registration form.
- *
- * @param props - Register form props.
- * @returns A React element.
- */
-export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
+export function RegisterForm({ onSubmit, onSendCode, isLoading }: RegisterFormProps) {
   const { t } = useTranslation();
+  const [sendingCode, setSendingCode] = useState(false);
+
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { email: "", username: "", password: "" },
+    defaultValues: { email: "", code: "", username: "", password: "" },
   });
-
-  const password = useWatch({ control, name: "password" });
 
   const submit = useCallback(
     async (data: RegisterFormData) => {
       try {
         await onSubmit(data);
-        Alert.alert(t("common.done"), t("auth.signIn"));
       } catch (e) {
         Alert.alert(
           t("auth.createAccount"),
@@ -73,6 +70,23 @@ export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
     },
     [onSubmit, t],
   );
+
+  const handleSendCode = useCallback(async () => {
+    const email = getValues("email");
+    if (!email) {
+      Alert.alert("Error", "Please enter your email first");
+      return;
+    }
+    setSendingCode(true);
+    try {
+      await onSendCode(email);
+      Alert.alert(t("common.done"), "Verification code sent to your email");
+    } catch (e: any) {
+      Alert.alert("Error", e?.message ?? "Failed to send code");
+    } finally {
+      setSendingCode(false);
+    }
+  }, [onSendCode, getValues, t]);
 
   return (
     <View className="gap-4">
@@ -91,6 +105,30 @@ export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
           />
         )}
       />
+
+      <View className="flex-row gap-2.5">
+        <View className="flex-1">
+          <Controller
+            control={control}
+            name="code"
+            render={({ field: { value, onChange } }) => (
+              <Input
+                label={t("auth.verificationCode")}
+                placeholder={t("auth.verificationCodePlaceholder")}
+                value={value}
+                onChangeText={onChange}
+                keyboardType="number-pad"
+                autoCapitalize="none"
+                error={errors.code?.message}
+              />
+            )}
+          />
+        </View>
+        <View className="pt-6">
+          <Button title={t("auth.sendCode")} onPress={handleSendCode} loading={sendingCode} variant="outline" />
+        </View>
+      </View>
+
       <Controller
         control={control}
         name="username"
@@ -119,7 +157,20 @@ export function RegisterForm({ onSubmit, isLoading }: RegisterFormProps) {
           />
         )}
       />
-      <PasswordStrength password={password ?? ""} />
+      <Controller
+        control={control}
+        name="confirmPassword"
+        render={({ field: { value, onChange } }) => (
+          <Input
+            label={t("auth.confirmPassword")}
+            placeholder={t("auth.confirmPasswordHint")}
+            value={value}
+            onChangeText={onChange}
+            secureTextEntry
+            error={errors.confirmPassword?.message}
+          />
+        )}
+      />
 
       <Button
         title={t("auth.createAccount")}

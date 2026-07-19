@@ -43,7 +43,7 @@ export default {
     tagline: "Where chats feel like home",
     subtitle:
       "Real-time messaging for communities, teams & friends. Fast, beautiful, and private.",
-    handwriting: "✦ built with care",
+
 
     signIn: "Sign In",
     createAccount: "Create Account",
@@ -65,6 +65,11 @@ export default {
 
     passwordStrength: "Password strength",
     passwordHint: "At least 8 characters",
+    confirmPassword: "Confirm Password",
+    confirmPasswordHint: "Re-enter password",
+    loginWithCode: "Email code login",
+    loginWithPassword: "Password login",
+    codeLogin: "Email Code Login",
   },
 
   // ── Tabs ───────────────────────────────────────────────────

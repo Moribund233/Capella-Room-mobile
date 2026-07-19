@@ -1,14 +1,21 @@
-import { useState, useCallback } from "react";
-import { View, Text, ScrollView, Pressable, Switch } from "react-native";
+import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  View, Text, ScrollView, Pressable, Switch, Modal, TextInput, Alert, ActivityIndicator,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useRouter, type Href } from "expo-router";
 import { useAuthStore } from "@/lib/store/auth";
 import { useThemeColors } from "@/lib/hooks/useThemeColors";
 import { useThemeStore } from "@/lib/store/theme";
 import { localeLabels, supportedLocales } from "@/lib/i18n";
 import { useLanguageStore } from "@/lib/store/language";
-import { useUpdateMe } from "@/lib/hooks/useUsersQuery";
+import { useUpdateMe, useUserStats, useChangePassword, useDeleteAccount } from "@/lib/hooks/useUsersQuery";
+import { useSettings, useUpdateSettings } from "@/lib/hooks/useSettingsQuery";
+import { useDevices, useTerminateAllOtherDevices, useLoginHistory } from "@/lib/hooks/useSecurityQuery";
+import { useFriends } from "@/lib/hooks/useFriendsQuery";
+import { useSaveUIConfig, useResetUIConfig } from "@/lib/hooks/useUIConfigQuery";
 import * as ImagePicker from "expo-image-picker";
 import { SettingsDrawer } from "@/components/ui/SettingsDrawer";
 
@@ -115,13 +122,203 @@ export default function ProfileScreen() {
   const setMode = useThemeStore((s) => s.setMode);
   const locale = useLanguageStore((s) => s.locale);
   const setLocale = useLanguageStore((s) => s.setLocale);
-  const logout = useAuthStore((s) => s.logout);
+  const router = useRouter();
+  const storeLogout = useAuthStore((s) => s.logout);
   const { mutate: updateMe } = useUpdateMe();
+  const { data: userStats } = useUserStats();
+  const { data: friendsData } = useFriends();
+  const friendsCount = friendsData?.length ?? 0;
+  const { data: userSettings } = useSettings();
+  const { mutate: updateSettings } = useUpdateSettings();
+  const { mutate: changePassword, isPending: changingPassword } = useChangePassword();
+  const { mutate: deleteAccount } = useDeleteAccount();
+  const { data: devices } = useDevices();
+  const { data: loginHistoryData } = useLoginHistory(20);
+  const { mutate: terminateOthers } = useTerminateAllOtherDevices();
+  const { mutate: saveUIConfig } = useSaveUIConfig();
 
   const isDark = resolvedTheme === "dark";
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [readReceipts, setReadReceipts] = useState(true);
   const [drawer, setDrawer] = useState<string | null>(null);
+
+  // Password change modal
+  const [pwModalVisible, setPwModalVisible] = useState(false);
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+
+  // Login history modal
+  const [loginHistoryVisible, setLoginHistoryVisible] = useState(false);
+
+  // Local toggle state synced from server settings
+  const settingsInitialized = useRef(false);
+  const [localNotif, setLocalNotif] = useState<Record<string, boolean>>({});
+  const [localPrivacy, setLocalPrivacy] = useState<Record<string, boolean | string>>({});
+  const [localAccessibility, setLocalAccessibility] = useState<Record<string, boolean | string>>({});
+  const [localMedia, setLocalMedia] = useState<Record<string, boolean | string>>({});
+
+  useEffect(() => {
+    if (userSettings && !settingsInitialized.current) {
+      settingsInitialized.current = true;
+      setLocalNotif({
+        privateMessage: userSettings.notification.private_message,
+        mentioned: userSettings.notification.mentioned,
+        roomInvitation: userSettings.notification.room_invitation,
+        systemNotification: userSettings.notification.system_notification,
+        fileUpload: userSettings.notification.file_upload_complete,
+        sound: userSettings.notification.sound_enabled,
+        desktop: userSettings.notification.desktop_notification,
+        dnd: userSettings.notification.do_not_disturb,
+      });
+      setLocalPrivacy({
+        allowStrangerMessage: userSettings.privacy.allow_stranger_message,
+        singleDeviceLogin: userSettings.privacy.single_device_login,
+        allowRoomInvitation: userSettings.privacy.allow_room_invitation,
+        onlineStatus: userSettings.privacy.online_status_visibility,
+        profileVisibility: userSettings.privacy.profile_visibility,
+      });
+      setLocalAccessibility({
+        fontSize: userSettings.accessibility.font_size,
+        highContrast: userSettings.accessibility.high_contrast,
+        reduceMotion: userSettings.accessibility.reduce_motion,
+        denseMode: userSettings.accessibility.dense_mode,
+      });
+      setLocalMedia({
+        autoDownloadMedia: userSettings.media.auto_download_media,
+        saveMediaGallery: userSettings.media.save_media_gallery,
+        imageQuality: userSettings.media.image_quality,
+        autoPlayVideo: userSettings.media.auto_play_video,
+        autoPlayAudio: userSettings.media.auto_play_audio,
+      });
+    }
+  }, [userSettings]);
+
+  const toggleNotif = useCallback(
+    (key: string, value: boolean) => {
+      setLocalNotif((prev) => ({ ...prev, [key]: value }));
+      const payload: Record<string, any> = {};
+      const map: Record<string, string> = {
+        privateMessage: "private_message",
+        mentioned: "mentioned",
+        roomInvitation: "room_invitation",
+        systemNotification: "system_notification",
+        fileUpload: "file_upload_complete",
+        sound: "sound_enabled",
+        desktop: "desktop_notification",
+        dnd: "do_not_disturb",
+      };
+      if (map[key]) {
+        payload[map[key]] = value;
+      }
+      updateSettings({ notification: userSettings?.notification ? { ...userSettings.notification, ...payload } : undefined } as any);
+    },
+    [updateSettings, userSettings],
+  );
+
+  const togglePrivacy = useCallback(
+    (key: string, value: boolean) => {
+      setLocalPrivacy((prev) => ({ ...prev, [key]: value }));
+      const map: Record<string, string> = {
+        allowStrangerMessage: "allow_stranger_message",
+        singleDeviceLogin: "single_device_login",
+        allowRoomInvitation: "allow_room_invitation",
+      };
+      const field = map[key];
+      if (field && userSettings) {
+        updateSettings({
+          privacy: { ...userSettings.privacy, [field]: value },
+        } as any);
+      }
+    },
+    [updateSettings, userSettings],
+  );
+
+  const toggleAccessibility = useCallback(
+    (key: string, value: boolean | string) => {
+      setLocalAccessibility((prev) => ({ ...prev, [key]: value }));
+      if (!userSettings) return;
+      const map: Record<string, string> = {
+        highContrast: "high_contrast",
+        reduceMotion: "reduce_motion",
+        denseMode: "dense_mode",
+      };
+      if (key === "fontSize") {
+        updateSettings({ accessibility: { ...userSettings.accessibility, font_size: value as any } } as any);
+      } else if (map[key]) {
+        updateSettings({
+          accessibility: { ...userSettings.accessibility, [map[key]]: value },
+        } as any);
+      }
+    },
+    [updateSettings, userSettings],
+  );
+
+  const toggleMedia = useCallback(
+    (key: string, value: boolean | string) => {
+      setLocalMedia((prev) => ({ ...prev, [key]: value }));
+      if (!userSettings) return;
+      const map: Record<string, string> = {
+        autoDownloadMedia: "auto_download_media",
+        saveMediaGallery: "save_media_gallery",
+        imageQuality: "image_quality",
+        autoPlayVideo: "auto_play_video",
+        autoPlayAudio: "auto_play_audio",
+      };
+      const field = map[key];
+      if (field) {
+        updateSettings({ media: { ...userSettings.media, [field]: value } } as any);
+      }
+    },
+    [updateSettings, userSettings],
+  );
+
+  const handleChangePassword = useCallback(() => {
+    if (!oldPw || !newPw) {
+      Alert.alert("Error", "Please fill in both fields");
+      return;
+    }
+    if (newPw.length < 8) {
+      Alert.alert("Error", "New password must be at least 8 characters");
+      return;
+    }
+    changePassword(
+      { oldPassword: oldPw, newPassword: newPw },
+      {
+        onSuccess: () => {
+          Alert.alert("Success", "Password changed successfully");
+          setPwModalVisible(false);
+          setOldPw("");
+          setNewPw("");
+        },
+        onError: (err: any) => {
+          Alert.alert("Error", err?.message ?? "Failed to change password");
+        },
+      },
+    );
+  }, [oldPw, newPw, changePassword]);
+
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      "Delete Account",
+      "This will permanently delete your account and all your data. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteAccount(undefined, {
+              onSuccess: () => {
+                useAuthStore.getState().logout();
+                router.replace("/(auth)" as Href);
+              },
+              onError: (err: any) => {
+                Alert.alert("Error", err?.message ?? "Failed to delete account");
+              },
+            });
+          },
+        },
+      ],
+    );
+  }, [deleteAccount, router]);
 
   const pickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -142,28 +339,37 @@ export default function ProfileScreen() {
   const closeDrawer = useCallback(() => setDrawer(null), []);
 
   const notifOptions = [
-    { label: t("settings.notifications.privateMessage"), toggle: true, toggleValue: true, onPress: () => {} },
-    { label: t("settings.notifications.mentioned"), toggle: true, toggleValue: true, onPress: () => {} },
-    { label: t("settings.notifications.roomInvitation"), toggle: true, toggleValue: true, onPress: () => {} },
-    { label: t("settings.notifications.systemNotification"), toggle: true, toggleValue: true, onPress: () => {} },
-    { label: t("settings.notifications.fileUploadComplete"), toggle: true, toggleValue: true, onPress: () => {} },
-    { label: t("settings.notifications.sound"), toggle: true, toggleValue: soundEnabled, onPress: () => setSoundEnabled((v) => !v) },
-    { label: t("settings.notifications.doNotDisturb"), toggle: true, toggleValue: false, onPress: () => {} },
+    { label: t("settings.notifications.privateMessage"), toggle: true, toggleValue: localNotif.privateMessage ?? true, onPress: () => toggleNotif("privateMessage", !localNotif.privateMessage) },
+    { label: t("settings.notifications.mentioned"), toggle: true, toggleValue: localNotif.mentioned ?? true, onPress: () => toggleNotif("mentioned", !localNotif.mentioned) },
+    { label: t("settings.notifications.roomInvitation"), toggle: true, toggleValue: localNotif.roomInvitation ?? true, onPress: () => toggleNotif("roomInvitation", !localNotif.roomInvitation) },
+    { label: t("settings.notifications.systemNotification"), toggle: true, toggleValue: localNotif.systemNotification ?? true, onPress: () => toggleNotif("systemNotification", !localNotif.systemNotification) },
+    { label: t("settings.notifications.fileUploadComplete"), toggle: true, toggleValue: localNotif.fileUpload ?? true, onPress: () => toggleNotif("fileUpload", !localNotif.fileUpload) },
+    { label: t("settings.notifications.sound"), toggle: true, toggleValue: localNotif.sound ?? true, onPress: () => toggleNotif("sound", !localNotif.sound) },
+    { label: t("settings.notifications.desktop"), toggle: true, toggleValue: localNotif.desktop ?? true, onPress: () => toggleNotif("desktop", !localNotif.desktop) },
+    { label: t("settings.notifications.doNotDisturb"), toggle: true, toggleValue: localNotif.dnd ?? false, onPress: () => toggleNotif("dnd", !localNotif.dnd) },
   ];
 
   const privacyOptions = [
-    { label: t("settings.privacy.onlineStatus"), value: t("common.everyone") ?? "Everyone", onPress: () => {} },
-    { label: t("settings.privacy.profileVisibility"), value: t("common.everyone") ?? "Everyone", onPress: () => {} },
-    { label: t("settings.privacy.allowStrangerMessage"), toggle: true, toggleValue: false, onPress: () => {} },
-    { label: t("settings.privacy.singleDeviceLogin"), toggle: true, toggleValue: true, onPress: () => {} },
-    { label: t("settings.privacy.allowRoomInvitation"), toggle: true, toggleValue: true, onPress: () => {} },
+    { label: t("settings.privacy.onlineStatus"), value: String(localPrivacy.onlineStatus ?? "everyone"), onPress: () => {} },
+    { label: t("settings.privacy.profileVisibility"), value: String(localPrivacy.profileVisibility ?? "everyone"), onPress: () => {} },
+    { label: t("settings.privacy.allowStrangerMessage"), toggle: true, toggleValue: !!localPrivacy.allowStrangerMessage, onPress: () => togglePrivacy("allowStrangerMessage", !localPrivacy.allowStrangerMessage) },
+    { label: t("settings.privacy.singleDeviceLogin"), toggle: true, toggleValue: !!localPrivacy.singleDeviceLogin, onPress: () => togglePrivacy("singleDeviceLogin", !localPrivacy.singleDeviceLogin) },
+    { label: t("settings.privacy.allowRoomInvitation"), toggle: true, toggleValue: !!localPrivacy.allowRoomInvitation, onPress: () => togglePrivacy("allowRoomInvitation", !localPrivacy.allowRoomInvitation) },
   ];
 
   const appearanceOptions = [
-    { label: t("settings.appearance.theme.title"), value: isDark ? t("settings.appearance.theme.dark") : t("settings.appearance.theme.light"), onPress: () => setMode(isDark ? "light" : "dark") },
-    { label: t("settings.appearance.fontSize"), onPress: () => {} },
-    { label: t("settings.appearance.highContrast"), toggle: true, toggleValue: false, onPress: () => {} },
-    { label: t("settings.appearance.reduceAnimations"), toggle: true, toggleValue: false, onPress: () => {} },
+    { label: t("settings.appearance.theme.title"), value: isDark ? t("settings.appearance.theme.dark") : t("settings.appearance.theme.light"), onPress: () => {
+      const mode = isDark ? "light" : "dark";
+      setMode(mode);
+      saveUIConfig({ theme: { name: mode } });
+    }},
+    { label: t("settings.appearance.fontSize"), value: String(localAccessibility.fontSize ?? "medium"), onPress: () => {
+      const cycle: Record<string, string> = { small: "medium", medium: "large", large: "small" };
+      const next = cycle[String(localAccessibility.fontSize ?? "medium")] || "medium";
+      toggleAccessibility("fontSize", next);
+    }},
+    { label: t("settings.appearance.highContrast"), toggle: true, toggleValue: !!localAccessibility.highContrast, onPress: () => toggleAccessibility("highContrast", !localAccessibility.highContrast) },
+    { label: t("settings.appearance.reduceAnimations"), toggle: true, toggleValue: !!localAccessibility.reduceMotion, onPress: () => toggleAccessibility("reduceMotion", !localAccessibility.reduceMotion) },
   ];
 
   const languageOptions = supportedLocales.map((loc) => ({
@@ -173,14 +379,38 @@ export default function ProfileScreen() {
   }));
 
   const securityOptions = [
-    { label: t("common.changePassword") ?? "Change Password", onPress: () => {} },
-    { label: t("common.twoFactor") ?? "Two-Factor Auth", onPress: () => {} },
-    { label: t("common.loginHistory") ?? "Login History", onPress: () => {} },
+    { label: t("common.changePassword") ?? "Change Password", onPress: () => setPwModalVisible(true) },
+    { label: t("common.loginHistory") ?? "Login History", onPress: () => setLoginHistoryVisible(true) },
+    ...(devices && devices.length > 1
+      ? [{
+          label: t("profile.security.terminateOthers") ?? "Terminate other devices",
+          onPress: () => {
+            Alert.alert("Terminate Others", "Log out all other devices?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Terminate", style: "destructive", onPress: () => terminateOthers() },
+            ]);
+          },
+        }]
+      : []),
   ];
 
+  const { mutate: resetUIConfig } = useResetUIConfig();
   const storageOptions = [
-    { label: t("common.autoDownloadImages") ?? "Auto-download Images", toggle: true, toggleValue: true, onPress: () => {} },
-    { label: t("common.autoDownloadVideos") ?? "Auto-download Videos", toggle: true, toggleValue: false, onPress: () => {} },
+    { label: "Auto-download Media", toggle: true, toggleValue: !!localMedia.autoDownloadMedia, onPress: () => toggleMedia("autoDownloadMedia", !localMedia.autoDownloadMedia) },
+    { label: "Save to Gallery", toggle: true, toggleValue: !!localMedia.saveMediaGallery, onPress: () => toggleMedia("saveMediaGallery", !localMedia.saveMediaGallery) },
+    { label: "Auto-play Video", toggle: true, toggleValue: !!localMedia.autoPlayVideo, onPress: () => toggleMedia("autoPlayVideo", !localMedia.autoPlayVideo) },
+    { label: "Auto-play Audio", toggle: true, toggleValue: !!localMedia.autoPlayAudio, onPress: () => toggleMedia("autoPlayAudio", !localMedia.autoPlayAudio) },
+    { label: "Image Quality", value: String(localMedia.imageQuality ?? "high"), onPress: () => {
+      const cycle: Record<string, string> = { original: "high", high: "medium", medium: "low", low: "original" };
+      const next = cycle[String(localMedia.imageQuality ?? "high")] || "high";
+      toggleMedia("imageQuality", next);
+    }},
+    { label: "Reset Cloud UI Config", onPress: () => {
+      Alert.alert("Reset UI Config", "Reset your cloud-synced UI settings to default?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Reset", style: "destructive", onPress: () => resetUIConfig() },
+      ]);
+    }},
     { label: t("common.clearCache") ?? "Clear Cache", onPress: () => {} },
   ];
 
@@ -219,7 +449,7 @@ export default function ProfileScreen() {
         {/* Bio */}
         <View className="mx-5 mb-4 mt-3 rounded-xl border border-border-soft bg-surface p-3">
           <Text className="text-[12.5px] leading-[1.55] text-ink-2">
-            Hey there! I'm using Capella Room.
+            Hey there! I&apos;m using Capella Room.
           </Text>
           <Text className="mt-1 font-hand text-[17px] text-purple">✦ making connections</Text>
         </View>
@@ -227,9 +457,9 @@ export default function ProfileScreen() {
         {/* Stats */}
         <View className="mx-5 mb-5 flex-row gap-2">
           {[
-            { num: "0", label: t("profile.stats.messages") },
-            { num: "1", label: t("profile.stats.rooms") },
-            { num: "0", label: t("profile.stats.friends") },
+            { num: String(userStats?.total_messages ?? 0), label: t("profile.stats.messages") },
+            { num: String(userStats?.joined_rooms ?? 0), label: t("profile.stats.rooms") },
+            { num: String(friendsCount), label: t("profile.stats.friends") },
             { num: "0", label: t("profile.stats.reactions") },
           ].map((stat) => (
             <View
@@ -250,23 +480,31 @@ export default function ProfileScreen() {
             title={t("profile.settings.darkMode")}
             showToggle
             toggleOn={isDark}
-            onToggle={(val) => setMode(val ? "dark" : "light")}
+            onToggle={(val) => {
+              const mode = val ? "dark" : "light";
+              setMode(mode);
+              saveUIConfig({ theme: { name: mode } });
+            }}
           />
           <SettingsItem
             icon="volume-high-outline"
             iconBg={colors.mintLight}
             title={t("profile.settings.soundEffects") ?? "Sound Effects"}
             showToggle
-            toggleOn={soundEnabled}
-            onToggle={(val) => setSoundEnabled(val)}
+            toggleOn={localNotif.sound ?? true}
+            onToggle={(val) => toggleNotif("sound", val)}
           />
           <SettingsItem
             icon="checkmark-outline"
             iconBg={colors.peachLight}
             title={t("profile.settings.readReceipts") ?? "Read Receipts"}
             showToggle
-            toggleOn={readReceipts}
-            onToggle={(val) => setReadReceipts(val)}
+            toggleOn={userSettings?.message?.read_receipt ?? true}
+            onToggle={(val) => {
+              if (userSettings) {
+                updateSettings({ message: { ...userSettings.message, read_receipt: val } } as any);
+              }
+            }}
           />
         </SettingsSection>
 
@@ -302,7 +540,7 @@ export default function ProfileScreen() {
           />
         </SettingsSection>
 
-        {/* Security */}
+        {/* Active Devices */}
         <View className="mx-5 mb-4 overflow-hidden rounded-2xl border border-border-soft bg-surface p-3.5">
           <View className="mb-3 flex-row items-center justify-between">
             <View className="flex-row items-center gap-1.5">
@@ -313,20 +551,31 @@ export default function ProfileScreen() {
             </View>
             <View className="rounded-md bg-mint-light px-2 py-0.5">
               <Text className="text-[9px] font-sans-semibold text-mint-text">
-                {t("profile.security.badgeSafe")}
+                {devices && devices.length > 0 ? `${devices.length} active` : t("profile.security.badgeSafe")}
               </Text>
             </View>
           </View>
-          <View className="flex-row items-center gap-2.5 border-t border-border-soft pt-2.5">
-            <View className="h-7 w-7 items-center justify-center rounded-lg bg-surface-alt">
-              <Ionicons name="phone-portrait-outline" size={14} color={colors.ink3} />
+          {(devices ?? []).slice(0, 3).map((device: any) => (
+            <View
+              key={device.id}
+              className="flex-row items-center gap-2.5 border-t border-border-soft pt-2.5 mt-2.5 first:mt-0"
+            >
+              <View className="h-7 w-7 items-center justify-center rounded-lg bg-surface-alt">
+                <Ionicons
+                  name={device.device_type === "mobile" ? "phone-portrait-outline" : "laptop-outline"}
+                  size={14}
+                  color={colors.ink3}
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[12px] font-sans-medium text-ink">{device.device_name ?? "Unknown"}</Text>
+                <Text className="text-[10px] text-ink-4">
+                  {device.is_current ? t("profile.security.current") : device.location ?? ""}
+                </Text>
+              </View>
+              <View className={`h-2 w-2 rounded-full ${device.is_blocked ? "bg-rose" : device.is_current ? "bg-mint" : "bg-ink-4/40"}`} />
             </View>
-            <View className="flex-1">
-              <Text className="text-[12px] font-sans-medium text-ink">Android Emulator</Text>
-              <Text className="text-[10px] text-ink-4">{t("profile.security.current")}</Text>
-            </View>
-            <View className="h-2 w-2 rounded-full bg-mint" />
-          </View>
+          ))}
         </View>
 
         {/* Account */}
@@ -346,10 +595,20 @@ export default function ProfileScreen() {
             onPress={() => setDrawer("storage")}
           />
           <SettingsItem
+            icon="trash-outline"
+            iconBg={colors.roseLight}
+            title="Delete Account"
+            subtitle="Permanently delete your account"
+            onPress={handleDeleteAccount}
+          />
+          <SettingsItem
             icon="log-out-outline"
             iconBg={colors.roseLight}
             title={t("profile.logout")}
-            onPress={logout}
+            onPress={async () => {
+              await storeLogout();
+              router.replace("/(auth)" as Href);
+            }}
           />
         </SettingsSection> 
 
@@ -392,6 +651,99 @@ export default function ProfileScreen() {
         options={storageOptions}
         onClose={closeDrawer}
       />
+
+      {/* Password Change Modal */}
+      <Modal visible={pwModalVisible} transparent animationType="fade" onRequestClose={() => setPwModalVisible(false)}>
+        <Pressable className="flex-1 justify-center bg-black/40 px-6" onPress={() => setPwModalVisible(false)}>
+          <Pressable onPress={() => {}} className="rounded-2xl bg-surface p-6">
+            <Text className="mb-4 text-center text-[17px] font-display-bold text-ink">{t("common.changePassword")}</Text>
+            <TextInput
+              value={oldPw}
+              onChangeText={setOldPw}
+              placeholder="Current password"
+              placeholderTextColor={colors.ink4}
+              secureTextEntry
+              className="mb-3 rounded-xl border border-border-soft px-4 py-3 text-[14px] text-ink"
+            />
+            <TextInput
+              value={newPw}
+              onChangeText={setNewPw}
+              placeholder="New password (min 8 chars)"
+              placeholderTextColor={colors.ink4}
+              secureTextEntry
+              className="mb-4 rounded-xl border border-border-soft px-4 py-3 text-[14px] text-ink"
+            />
+            <View className="flex-row gap-3">
+              <Pressable onPress={() => setPwModalVisible(false)} className="flex-1 rounded-xl border border-border-soft py-3">
+                <Text className="text-center text-[13px] font-sans-semibold text-ink-3">{t("common.cancel")}</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleChangePassword}
+                disabled={changingPassword || !oldPw || !newPw}
+                className="flex-1 rounded-xl bg-purple py-3"
+              >
+                {changingPassword ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-center text-[13px] font-sans-semibold text-white">{t("common.save")}</Text>
+                )}
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Login History Modal */}
+      <Modal visible={loginHistoryVisible} transparent animationType="slide" onRequestClose={() => setLoginHistoryVisible(false)}>
+        <View className="flex-1 justify-end bg-black/40">
+          <Pressable onPress={() => setLoginHistoryVisible(false)} className="flex-1" />
+          <View className="max-h-[60%] rounded-t-3xl bg-cream pb-6">
+            <Pressable onPress={() => setLoginHistoryVisible(false)} className="items-center pt-3 pb-2">
+              <View className="h-1 w-10 rounded-full bg-ink-4/40" />
+            </Pressable>
+            <Text className="mb-3 text-center text-[17px] font-display-bold text-ink">{t("common.loginHistory")}</Text>
+            <ScrollView className="px-5">
+              {((loginHistoryData as any)?.data ?? []).length === 0 ? (
+                <Text className="py-8 text-center text-[13px] text-ink-3">No login history available</Text>
+              ) : (
+                ((loginHistoryData as any)?.data ?? []).map((entry: any) => (
+                  <View
+                    key={entry.id}
+                    className="flex-row items-center gap-3 border-b border-border-soft py-3.5"
+                  >
+                    <View
+                      className="h-8 w-8 items-center justify-center rounded-xl"
+                      style={{
+                        backgroundColor: entry.is_suspicious ? colors.roseLight : entry.login_status === "success" ? colors.mintLight : colors.peachLight,
+                      }}
+                    >
+                      <Ionicons
+                        name={entry.is_suspicious ? "warning-outline" : entry.login_status === "success" ? "checkmark" : "close"}
+                        size={14}
+                        style={{ color: entry.is_suspicious ? colors.roseText : entry.login_status === "success" ? colors.mintText : colors.peachText }}
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[12px] font-sans-semibold text-ink">{entry.device_name ?? "Unknown device"}</Text>
+                      <Text className="text-[10px] text-ink-4">
+                        {entry.ip_address}{entry.location ? ` · ${entry.location}` : ""}
+                      </Text>
+                      <Text className="text-[10px] text-ink-4">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </Text>
+                    </View>
+                    {entry.is_suspicious && (
+                      <View className="rounded-md bg-rose-light px-2 py-0.5">
+                        <Text className="text-[9px] font-sans-semibold text-rose-text">Suspicious</Text>
+                      </View>
+                    )}
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

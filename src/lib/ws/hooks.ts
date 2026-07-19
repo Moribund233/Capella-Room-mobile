@@ -158,6 +158,73 @@ export function useWsEventHandlers() {
       }),
     );
 
+    /* ── System message → append as system-type message ── */
+    unsubscribers.push(
+      ws.on("SystemMessage", (payload: any) => {
+        const roomId = payload.room_id ?? "";
+        if (roomId) {
+          const msg: Message = {
+            id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            room_id: roomId,
+            sender: { id: "system", username: "System", avatar_url: null },
+            content: payload.content ?? "",
+            message_type: "system",
+            reply_to: null,
+            reply_to_message: null,
+            is_deleted: false,
+            created_at: new Date().toISOString(),
+          };
+          appendMessageToCache(roomId, msg);
+        }
+      }),
+    );
+
+    /* ── Room updated → invalidate room detail + lists ── */
+    unsubscribers.push(
+      ws.on("RoomUpdated", (payload: any) => {
+        queryClient.invalidateQueries({ queryKey: roomKeys.all });
+        queryClient.invalidateQueries({ queryKey: roomKeys.recent });
+        if (payload.room_id) {
+          queryClient.invalidateQueries({ queryKey: roomKeys.detail(payload.room_id) });
+        }
+      }),
+    );
+
+    /* ── Session restored → invalidate rooms (reconnect complete) ── */
+    unsubscribers.push(
+      ws.on("SessionRestored", () => {
+        queryClient.invalidateQueries({ queryKey: roomKeys.all });
+        queryClient.invalidateQueries({ queryKey: roomKeys.recent });
+      }),
+    );
+
+    /* ── Notification read confirm → invalidate notifications ── */
+    unsubscribers.push(
+      ws.on("NotificationReadConfirm", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+        queryClient.invalidateQueries({ queryKey: notifKeys.unread });
+      }),
+    );
+
+    /* ── Pending action events → invalidate notifications (admin) ── */
+    unsubscribers.push(
+      ws.on("PendingAction", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+      }),
+    );
+    unsubscribers.push(
+      ws.on("PendingActionsList", () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+      }),
+    );
+
+    /* ── Global online users → update room store ── */
+    unsubscribers.push(
+      ws.on("GlobalOnlineUsers", (payload: any) => {
+        useRoomStore.getState().setOnlineUsers("__global__", payload.users ?? []);
+      }),
+    );
+
     /* ── Room summary → invalidate rooms list (all + recent) ── */
     unsubscribers.push(
       ws.on("RoomMessageSummary", (_payload: any) => {

@@ -60,20 +60,20 @@ export interface UserSettings {
     timezone: string;
     time_format: "12h" | "24h";
     date_format: "YYYY-MM-DD" | "DD/MM/YYYY" | "MM/DD/YYYY";
-    week_start: "monday" | "sunday";
+    first_day_of_week: "monday" | "sunday";
   };
   accessibility: {
     font_size: "small" | "medium" | "large";
+    reduce_motion: boolean;
     high_contrast: boolean;
-    reduce_animations: boolean;
-    screen_reader_optimized: boolean;
+    dense_mode: boolean;
   };
   media: {
-    auto_download_images: boolean;
-    auto_download_videos: boolean;
-    auto_download_files: boolean;
-    image_quality: "low" | "medium" | "high";
-    auto_play_videos: boolean;
+    auto_download_media: boolean;
+    save_media_gallery: boolean;
+    image_quality: "original" | "high" | "medium" | "low";
+    auto_play_video: boolean;
+    auto_play_audio: boolean;
   };
 }
 

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,21 +17,25 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useThemeColors } from "@/lib/hooks/useThemeColors";
 import { useRoom } from "@/lib/hooks/useRoomsQuery";
-import { useMessages, usePinnedMessages } from "@/lib/hooks/useMessagesQuery";
+import { useMessages, usePinnedMessages, useSearchMessages } from "@/lib/hooks/useMessagesQuery";
 import { useWsJoinRoom } from "@/lib/ws/hooks";
 import { getWsClient } from "@/lib/ws/client";
 import { useAuthStore } from "@/lib/store/auth";
 import { formatMessageTime } from "@/lib/utils/date";
+import * as ImagePicker from "expo-image-picker";
+import { uploadImage } from "@/lib/api/files";
 import type { Message } from "@/lib/api/messages";
 
 function ChatHeader({
   roomName,
   memberCount,
   onBack,
+  onSearch,
 }: {
   roomName: string;
   memberCount?: number;
   onBack: () => void;
+  onSearch?: () => void;
 }) {
   const colors = useThemeColors();
   return (
@@ -57,6 +62,11 @@ function ChatHeader({
         </View>
       </View>
       <View className="flex-row gap-1">
+        {onSearch && (
+          <Pressable onPress={onSearch} className="h-[34px] w-[34px] items-center justify-center rounded-xl active:bg-surface-alt">
+            <Ionicons name="search-outline" size={18} color={colors.ink2} />
+          </Pressable>
+        )}
         <Pressable className="h-[34px] w-[34px] items-center justify-center rounded-xl active:bg-surface-alt">
           <Ionicons name="call-outline" size={18} color={colors.ink2} />
         </Pressable>
@@ -239,12 +249,37 @@ function ChatInput({
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const handleSend = () => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || uploading) return;
     onSend(trimmed);
     setText("");
+  };
+
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    setUploading(true);
+    try {
+      const localUri = result.assets[0].uri;
+      const filename = result.assets[0].fileName ?? "photo.jpg";
+      const mimeType = result.assets[0].mimeType ?? "image/jpeg";
+      const formData = new FormData();
+      formData.append("file", { uri: localUri, name: filename, type: mimeType } as any);
+      const fileInfo = await uploadImage(formData);
+      onSend(fileInfo.file_url);
+    } catch (err: any) {
+      Alert.alert("Upload failed", err?.message ?? "Could not upload image");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -253,8 +288,16 @@ function ChatInput({
       style={{ backgroundColor: "rgba(250,247,242,0.95)", paddingBottom: 4 + insets.bottom }}
     >
       <View className="flex-row gap-0.5 pb-1">
-        <Pressable className="h-8 w-8 items-center justify-center rounded-xl active:bg-surface-alt">
-          <Ionicons name="add-circle-outline" size={22} color={colors.ink3} />
+        <Pressable
+          onPress={handlePickImage}
+          disabled={uploading}
+          className="h-8 w-8 items-center justify-center rounded-xl active:bg-surface-alt"
+        >
+          {uploading ? (
+            <ActivityIndicator size="small" color={colors.purple} />
+          ) : (
+            <Ionicons name="image-outline" size={22} color={colors.ink3} />
+          )}
         </Pressable>
       </View>
       <View
@@ -273,10 +316,11 @@ function ChatInput({
       </View>
       <Pressable
         onPress={handleSend}
+        disabled={uploading || !text.trim()}
         className="mb-0.5 h-[38px] w-[38px] items-center justify-center rounded-full"
-        style={{ backgroundColor: colors.purple }}
+        style={{ backgroundColor: text.trim() && !uploading ? colors.purple : colors.surfaceAlt }}
       >
-        <Ionicons name="send" size={18} color="white" />
+        <Ionicons name="send" size={18} color={uploading || !text.trim() ? colors.ink3 : "white"} />
       </Pressable>
     </View>
   );
@@ -290,6 +334,9 @@ export default function ChatRoomScreen() {
   const { id: roomId } = useLocalSearchParams<{ id: string }>();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { mutate: searchMessages, data: searchResults, isPending: searching } = useSearchMessages();
 
   const { data: room, isLoading: roomLoading } = useRoom(roomId ?? "");
   const {
@@ -364,7 +411,61 @@ export default function ChatRoomScreen() {
         roomName={room.name ?? "Chat"}
         memberCount={room.member_count}
         onBack={() => router.back()}
+        onSearch={() => setSearchVisible(true)}
       />
+
+      {/* Search overlay */}
+      {searchVisible && (
+        <View className="mx-4 mb-2 mt-2">
+          <View className="flex-row items-center gap-2 rounded-xl border border-purple bg-surface px-3 py-2">
+            <Ionicons name="search" size={16} color={colors.ink3} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search messages..."
+              placeholderTextColor={colors.ink4}
+              className="flex-1 text-[13px] text-ink"
+              autoCapitalize="none"
+              returnKeyType="search"
+              onSubmitEditing={() => {
+                if (searchQuery.trim() && roomId) {
+                  searchMessages({ query: searchQuery, roomId });
+                }
+              }}
+            />
+            {searching && <ActivityIndicator size="small" color={colors.purple} />}
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => { setSearchQuery(""); setSearchVisible(false); }}>
+                <Ionicons name="close" size={18} color={colors.ink3} />
+              </Pressable>
+            )}
+          </View>
+          {searchResults && searchResults.length > 0 && (
+            <View className="mt-2 rounded-xl border border-border-soft bg-surface max-h-48 overflow-hidden">
+              <ScrollView>
+                {searchResults.slice(0, 20).map((msg: any) => (
+                  <Pressable
+                    key={msg.id}
+                    className="flex-row items-center gap-2 px-3 py-2.5 border-b border-border-soft last:border-0 active:bg-surface-alt"
+                  >
+                    <View className="flex-1">
+                      <Text className="text-[11px] font-sans-semibold text-ink">
+                        {msg.sender?.username ?? "Unknown"}
+                      </Text>
+                      <Text className="text-[12px] text-ink-3 leading-[1.3]" numberOfLines={2}>
+                        {msg.content}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+          {searchResults && searchResults.length === 0 && searchQuery.length > 0 && !searching && (
+            <Text className="mt-2 text-center text-[12px] text-ink-4">No messages found</Text>
+          )}
+        </View>
+      )}
 
       {/* Pinned banner */}
       {pinnedMessage && (

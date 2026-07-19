@@ -31,9 +31,12 @@ export default function AuthScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<AuthTab>("login");
   const user = useAuthStore((s) => s.user);
-  const login = useAuthStore((s) => s.login);
-  const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const loginWithPassword = useAuthStore((s) => s.loginWithPassword);
+  const loginWithCode = useAuthStore((s) => s.loginWithCode);
+  const sendLoginCode = useAuthStore((s) => s.sendLoginCode);
+  const registerWithCode = useAuthStore((s) => s.registerWithCode);
+  const sendRegisterCode = useAuthStore((s) => s.sendRegisterCode);
 
   useEffect(() => {
     if (user) {
@@ -43,16 +46,37 @@ export default function AuthScreen() {
 
   const onLogin = useCallback(
     async (data: { email: string; password: string }) => {
-      await login(data.email, data.password);
+      await loginWithPassword(data.email, data.password);
     },
-    [login],
+    [loginWithPassword],
+  );
+
+  const onLoginWithCode = useCallback(
+    async (data: { email: string; code: string }) => {
+      await loginWithCode(data.email, data.code);
+    },
+    [loginWithCode],
+  );
+
+  const onSendLoginCode = useCallback(
+    async (email: string) => {
+      return await sendLoginCode(email);
+    },
+    [sendLoginCode],
   );
 
   const onRegister = useCallback(
-    async (data: { username: string; email: string; password: string }) => {
-      await register(data.username, data.email, data.password);
+    async (data: { email: string; code: string; username: string; password: string }) => {
+      await registerWithCode(data.email, data.code, data.username, data.password);
     },
-    [register],
+    [registerWithCode],
+  );
+
+  const onSendRegisterCode = useCallback(
+    async (email: string) => {
+      return await sendRegisterCode(email);
+    },
+    [sendRegisterCode],
   );
 
   return (
@@ -71,15 +95,24 @@ export default function AuthScreen() {
           <Text className="mt-2.5 text-[14px] leading-[22px] text-ink-3">
             {t("auth.subtitle")}
           </Text>
-          <Handwriting>{t("auth.handwriting")}</Handwriting>
+          <Handwriting>✦ built with care</Handwriting>
         </View>
 
         <TabSwitcher active={activeTab} onSwitch={setActiveTab} />
 
         {activeTab === "login" ? (
-          <LoginForm onSubmit={onLogin} isLoading={isLoading} />
+          <LoginForm
+            onPasswordSubmit={onLogin}
+            onCodeSubmit={onLoginWithCode}
+            onSendCode={onSendLoginCode}
+            isLoading={isLoading}
+          />
         ) : (
-          <RegisterForm onSubmit={onRegister} isLoading={isLoading} />
+          <RegisterForm
+            onSubmit={onRegister}
+            onSendCode={onSendRegisterCode}
+            isLoading={isLoading}
+          />
         )}
       </View>
     </Screen>

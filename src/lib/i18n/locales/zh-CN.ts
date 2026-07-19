@@ -45,7 +45,7 @@ export default {
   auth: {
     tagline: "让聊天像家一样自在",
     subtitle: "为社群、团队与好友打造的实时消息空间。快速、美观、私密。",
-    handwriting: "✦ 用心构建",
+
 
     signIn: "登录",
     createAccount: "创建账号",
@@ -67,6 +67,11 @@ export default {
 
     passwordStrength: "密码强度",
     passwordHint: "至少 8 位字符",
+    confirmPassword: "确认密码",
+    confirmPasswordHint: "再次输入密码",
+    loginWithCode: "邮箱验证登录",
+    loginWithPassword: "密码登录",
+    codeLogin: "邮箱验证登录",
   },
 
   // ── Tabs ───────────────────────────────────────────────────

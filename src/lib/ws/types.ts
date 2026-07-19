@@ -35,6 +35,20 @@ export interface ErrorPayload {
   message: string;
 }
 
+/* ─── System Message (in-chat broadcast) ──────────────── */
+
+export interface SystemMessagePayload {
+  content: string;
+}
+
+/* ─── Room Updated ────────────────────────────────────── */
+
+export interface RoomUpdatedPayload {
+  room_id: string;
+  name?: string | null;
+  description?: string | null;
+}
+
 /* ─── Room Management ──────────────────────────────────── */
 
 export interface JoinRoomPayload {
@@ -303,6 +317,8 @@ export type WsIncomingMessage =
   | { type: "Ping" }
   | { type: "Pong" }
   | { type: "Error"; payload: ErrorPayload }
+  | { type: "SystemMessage"; payload: SystemMessagePayload }
+  | { type: "RoomUpdated"; payload: RoomUpdatedPayload }
   | { type: "RoomJoined"; payload: RoomJoinedPayload }
   | { type: "RoomLeft"; payload: RoomLeftPayload }
   | { type: "UserJoined"; payload: UserEventPayload }
